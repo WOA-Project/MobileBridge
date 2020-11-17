@@ -1,78 +1,110 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\Audio Syncing Controller.cpp" />
-    <ClCompile Include="src\Topology FM Controller.cpp" />
-    <ClCompile Include="src\Topology Telephony Controller.cpp" />
-    <ClCompile Include="src\Brightness Sensor Controller.cpp" />
-    <ClCompile Include="src\Data Management Controller.cpp" />
-    <ClCompile Include="src\DeviceInfo.cpp" />
-    <ClCompile Include="src\Power Supply Controller.cpp" />
-    <ClCompile Include="src\RILInit.cpp" />
-    <ClCompile Include="src\WNFHandler.cpp" />
-    <ClCompile Include="src\Main.cpp" />
-    <ClCompile Include="src\pch.cpp" />
-    <ClCompile Include="src\Utilities.cpp" />
+    <ClCompile Include="src\Audio Syncing Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Brightness Sensor Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data Management Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DeviceInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Power Supply Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RILInit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Topology FM Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Topology Telephony Controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WNFHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Audio Syncing Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Brightness Sensor Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Data Management Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\DeviceInfo.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Main.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\pch.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Power Supply Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\rilapi.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\resource.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\rilapitypes.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\RILInit.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Topology FM Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Topology Telephony Controller.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\WNFHandler.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Wwapi.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Include\Utilities.h">
-      <Filter>Include</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MobileBridgeSvc.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Include">
+    <Filter Include="Header Files">
       <UniqueIdentifier>{5d128734-4a58-4903-9b74-f036208e5089}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{c2d7d672-3fab-49b0-b929-4bc4256cb883}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{50e3fdba-7a76-497b-a701-c688a1b481e2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MobileBridgeSvc.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
