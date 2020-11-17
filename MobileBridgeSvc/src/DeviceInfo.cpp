@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <fstream>
 #include <map>
+#include "Utilities.h"
 
 struct cmp_str
 {
@@ -40,91 +41,50 @@ std::map<const char*, const char*, cmp_str> device_map =
 #define PHONE_HARDWARE_REVISION			   "1.0.0.0"
 #define PHONE_MANUFACTURER MANUFACTURER    "MicrosoftMDG"
 #define PHONE_MANUFACTURER_DISPLAY_NAME    MANUFACTURER
-#define PHONE_MANUFACTURER_MODEL_NAME(x)   BuildModelStr2(x)
+#define PHONE_MANUFACTURER_MODEL_NAME(x)   BuildManufacturerModelNameStr(x)
 #define PHONE_MOBILE_OPERATOR_DISPLAY_NAME "Operator"
 #define PHONE_MOBILE_OPERATOR_NAME		   "000-88"
 #define PHONE_MODEL_NAME(x)				   device_map[x]
 #define PHONE_OEM_SUPPORT_LINK			   SUPPORT_URL
 #define PHONE_RADIO_SOFTWARE_REVISION	   "BO25c43.00024.0001"
 #define PHONE_ROM_LANGUAGE				   "0809"
-#define PHONE_SOC_VERSION(x)			   GetSOC(x)
+#define PHONE_SOC_VERSION(x)			   GetSystemOnChipStr(x)
 
-#define PRODUCT_STRING(x)                  BuildModelStr3(x)
+#define PRODUCT_STRING(x)                  BuildProductStr(x)
 
-const char* GetSOC(char* x)
+char ModelStr[256] = { 0 };
+char ManufacturerModelNameStr[256] = { 0 };
+char ProductStr[256] = { 0 };
+
+const char* GetSystemOnChipStr(char* x)
 {
-	if (std::strcmp(x, "RM-1104") == 0 || std::strcmp(x, "RM-1105") == 0 || std::strcmp(x, "RM-1106") == 0 || std::strcmp(x, "RM-1118") == 0) \
+	if (std::strcmp(x, "RM-1104") == 0 || std::strcmp(x, "RM-1105") == 0 || std::strcmp(x, "RM-1106") == 0 || std::strcmp(x, "RM-1118") == 0)
 		return "8992";
 	return "8994";
 }
 
-char str[256] = { 0 };
-
 const char* BuildModelStr(char* x)
 {
-	memset(str, 0, 256);
-	strcat_s(str, MANUFACTURER);
-	strcat_s(str, " ");
-	strcat_s(str, device_map[x]);
-	return str;
+	memset(ModelStr, 0, 256);
+	strcat_s(ModelStr, MANUFACTURER);
+	strcat_s(ModelStr, " ");
+	strcat_s(ModelStr, device_map[x]);
+	sprintf_s(ModelStr, MANUFACTURER " %s", device_map[x]);
+	return ModelStr;
 }
 
-char str2[256] = { 0 };
-
-const char* BuildModelStr2(char* x)
+const char* BuildManufacturerModelNameStr(char* x)
 {
-	memset(str2, 0, 256);
-	strcat_s(str2, x);
-	strcat_s(str2, "-13842");
-	return str2;
+	memset(ManufacturerModelNameStr, 0, 256);
+	sprintf_s(ManufacturerModelNameStr, "%s-13842", x);
+	return ManufacturerModelNameStr;
 }
 
-char str3[256] = { 0 };
-
-const char* BuildModelStr3(char* y)
+const char* BuildProductStr(char* y)
 {
-	memset(str3, 0, 256);
-	strcat_s(str3, device_map[y]);
-	strcat_s(str3, y);
-	return str3;
-}
-
-BOOL DirectoryExists2(const char* dirName) {
-	DWORD attribs = ::GetFileAttributes(dirName);
-	if (attribs == INVALID_FILE_ATTRIBUTES) {
-		return false;
-	}
-	return (attribs & FILE_ATTRIBUTE_DIRECTORY);
-}
-
-BOOL FileExists(const char* dirName) {
-	DWORD attribs = ::GetFileAttributes(dirName);
-	if (attribs == INVALID_FILE_ATTRIBUTES) {
-		return false;
-	}
-	return !(attribs & FILE_ATTRIBUTE_DIRECTORY);
-}
-
-void MyRegSetValue(const char* key, const char* valueName, const char* value)
-{
-	LONG status;
-	HKEY hKey;
-
-	status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key, 0, KEY_ALL_ACCESS, &hKey);
-	if ((status == ERROR_SUCCESS) && (hKey != NULL))
-	{
-		status = RegSetValueEx(hKey, valueName, 0, REG_SZ, (BYTE*)value, ((DWORD)strlen(value) + 1) * sizeof(char));
-		RegCloseKey(hKey);
-	}
-	else
-	{
-		status = RegCreateKeyEx(HKEY_LOCAL_MACHINE, key, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, NULL);
-		if ((status == ERROR_SUCCESS) && (hKey != NULL))
-		{
-			status = RegSetValueEx(hKey, valueName, 0, REG_SZ, (BYTE*)value, ((DWORD)strlen(value) + 1) * sizeof(char));
-			RegCloseKey(hKey);
-		}
-	}
+	memset(ProductStr, 0, 256);
+	sprintf_s(ProductStr, "%s (%s)", device_map[y], y);
+	return ProductStr;
 }
 
 HRESULT DeviceInfo::Initialize()
@@ -135,15 +95,15 @@ HRESULT DeviceInfo::Initialize()
 	const char* MMOPath = "C:\\DPP\\MMO\\product.dat";
 	const char* NMOPath = "C:\\DPP\\NMO\\product.dat";
 
-	BOOL MMOPresent = DirectoryExists2("C:\\DPP\\MMO");
-	BOOL NMOPresent = DirectoryExists2("C:\\DPP\\Nokia");
+	BOOL MMOPresent = Utilities::DoesDirectoryExist("C:\\DPP\\MMO");
+	BOOL NMOPresent = Utilities::DoesDirectoryExist("C:\\DPP\\Nokia");
 
 	if (!MMOPresent && !NMOPresent)
 	{
 		return ERROR_SUCCESS;
 	}
 
-	if ((MMOPresent && !FileExists(MMOPath)) || (NMOPresent && !FileExists(NMOPath)))
+	if ((MMOPresent && !Utilities::DoesFileExist(MMOPath)) || (NMOPresent && !Utilities::DoesFileExist(NMOPath)))
 	{
 		return ERROR_SUCCESS;
 	}
@@ -193,27 +153,27 @@ HRESULT DeviceInfo::Initialize()
 			return ERROR_SUCCESS;
 		}
 
-		MyRegSetValue(OEM_INFORMATION, "Manufacturer", MANUFACTURER);
-		MyRegSetValue(OEM_INFORMATION, "Model", MODEL(ProductCode));
-		MyRegSetValue(OEM_INFORMATION, "SupportHours", SUPPORT_HOURS);
-		MyRegSetValue(OEM_INFORMATION, "SupportPhone", SUPPORT_PHONE);
-		MyRegSetValue(OEM_INFORMATION, "SupportURL", SUPPORT_URL);
-		MyRegSetValue(OEM_INFORMATION, "Logo", LOGO);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "Manufacturer", MANUFACTURER);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "Model", MODEL(ProductCode));
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "SupportHours", SUPPORT_HOURS);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "SupportPhone", SUPPORT_PHONE);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "SupportURL", SUPPORT_URL);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(OEM_INFORMATION, "Logo", LOGO);
 
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneFirmwareRevision", PHONE_FIRMWARE_REVISION);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneHardwareRevision", PHONE_HARDWARE_REVISION);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneHardwareVariant", ProductCode);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneManufacturer", PHONE_MANUFACTURER);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneManufacturerDisplayName", PHONE_MANUFACTURER_DISPLAY_NAME);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneManufacturerModelName", PHONE_MANUFACTURER_MODEL_NAME(ProductCode));
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneMobileOperatorDisplayName", PHONE_MOBILE_OPERATOR_DISPLAY_NAME);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneMobileOperatorName", PHONE_MOBILE_OPERATOR_NAME);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneModelName", PHONE_MODEL_NAME(ProductCode));
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneOEMSupportLink", PHONE_OEM_SUPPORT_LINK);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneRadioSoftwareRevision", PHONE_RADIO_SOFTWARE_REVISION);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneROMLanguage", PHONE_ROM_LANGUAGE);
-		MyRegSetValue(DEVICE_TARGETING_INFO, "PhoneSOCVersion", PHONE_SOC_VERSION(ProductCode));
-		MyRegSetValue(UNIVERSAL_SERIAL_BUS_FUNCTION, "ProductString", PRODUCT_STRING(ProductCode));
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneFirmwareRevision", PHONE_FIRMWARE_REVISION);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneHardwareRevision", PHONE_HARDWARE_REVISION);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneHardwareVariant", ProductCode);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneManufacturer", PHONE_MANUFACTURER);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneManufacturerDisplayName", PHONE_MANUFACTURER_DISPLAY_NAME);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneManufacturerModelName", PHONE_MANUFACTURER_MODEL_NAME(ProductCode));
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneMobileOperatorDisplayName", PHONE_MOBILE_OPERATOR_DISPLAY_NAME);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneMobileOperatorName", PHONE_MOBILE_OPERATOR_NAME);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneModelName", PHONE_MODEL_NAME(ProductCode));
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneOEMSupportLink", PHONE_OEM_SUPPORT_LINK);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneRadioSoftwareRevision", PHONE_RADIO_SOFTWARE_REVISION);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneROMLanguage", PHONE_ROM_LANGUAGE);
+		Utilities::RegSetValueAndCreateKeyIfNeeded(DEVICE_TARGETING_INFO, "PhoneSOCVersion", PHONE_SOC_VERSION(ProductCode));
+		Utilities::RegSetValueAndCreateKeyIfNeeded(UNIVERSAL_SERIAL_BUS_FUNCTION, "ProductString", PRODUCT_STRING(ProductCode));
 	}
 
 	if (strlen(HardwareRevision) != 0)

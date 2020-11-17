@@ -3,10 +3,13 @@
 #include "Audio Syncing Controller.h"
 #include "Brightness Sensor Controller.h"
 #include "Data Management Controller.h"
-//#include "Power Supply Controller.h"
 #include "DeviceInfo.h"
 #include "RILInit.h"
+#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
+#include "Power Supply Controller.h"
+#endif
 #include <winrt/Windows.Foundation.h>
+#include "Utilities.h"
 
 using namespace winrt;
 
@@ -14,8 +17,10 @@ AudioSyncingController audioSyncingController;
 BrightnessSensorController brightnessSensorController;
 DataManagementController dataManagementController;
 RILInit rilInit;
-//PowerSupplyController powerSupplyController;
 DeviceInfo deviceInfo;
+#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
+PowerSupplyController powerSupplyController;
+#endif
 
 int _tmain(int argc, TCHAR* argv[])
 {
@@ -39,19 +44,11 @@ int _tmain(int argc, TCHAR* argv[])
 
 #define BUFSIZE MAX_PATH
 
-BOOL DirectoryExists(const char* dirName) {
-	DWORD attribs = ::GetFileAttributes(dirName);
-	if (attribs == INVALID_FILE_ATTRIBUTES) {
-		return false;
-	}
-	return (attribs & FILE_ATTRIBUTE_DIRECTORY);
-}
-
 int TryToMountDPPIfNeeded()
 {
 	char Buf[BUFSIZE];     // temporary buffer for volume name
 
-	if (DirectoryExists("C:\\DPP"))
+	if (Utilities::DoesDirectoryExist("C:\\DPP"))
 	{
 		return -4;
 	}
@@ -193,8 +190,11 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 	rilInit.Initialize(g_ServiceStopEvent);
 	dataManagementController.Initialize(g_ServiceStopEvent);
 	deviceInfo.Initialize();
-	//Sleep(4000);
-	//powerSupplyController.Initialize();
+
+#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
+	Sleep(4000);
+	powerSupplyController.Initialize();
+#endif
 
 	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
 	{

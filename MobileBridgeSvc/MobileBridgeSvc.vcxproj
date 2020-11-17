@@ -109,6 +109,7 @@
     <ClCompile Include="src\WNFHandler.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\pch.cpp" />
+    <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Audio Syncing Controller.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="Include\Wwapi.h" />
     <ClInclude Include="Include\rilapi.h" />
     <ClInclude Include="Include\rilapitypes.h" />
+    <ClInclude Include="Include\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MobileBridgeSvc.rc" />

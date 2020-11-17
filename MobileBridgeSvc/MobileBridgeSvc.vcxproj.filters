@@ -12,6 +12,7 @@
     <ClCompile Include="src\WNFHandler.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\pch.cpp" />
+    <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Audio Syncing Controller.h">
@@ -57,6 +58,9 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="Include\Wwapi.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Utilities.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
