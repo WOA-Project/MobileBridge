@@ -76,7 +76,7 @@ const char* BuildModelStr(char* x)
 const char* BuildManufacturerModelNameStr(char* x)
 {
 	memset(ManufacturerModelNameStr, 0, 256);
-	sprintf_s(ManufacturerModelNameStr, "%s-13842", x);
+	sprintf_s(ManufacturerModelNameStr, "%s_13842", x);
 	return ManufacturerModelNameStr;
 }
 
