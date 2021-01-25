@@ -5,6 +5,7 @@
 #include "Data Management Controller.h"
 #include "DeviceInfo.h"
 #include "RILInit.h"
+#include "WCOSWorkarounds.h"
 #ifdef ENABLE_POWER_SUPPLY_NOTIFIER
 #include "Power Supply Controller.h"
 #endif
@@ -18,6 +19,7 @@ BrightnessSensorController brightnessSensorController;
 DataManagementController dataManagementController;
 RILInit rilInit;
 DeviceInfo deviceInfo;
+WCOSWorkarounds workarounds;
 #ifdef ENABLE_POWER_SUPPLY_NOTIFIER
 PowerSupplyController powerSupplyController;
 #endif
@@ -184,6 +186,7 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 {
 	init_apartment();
 
+	workarounds.Initialize();
 	TryToMountDPPIfNeeded();
 	audioSyncingController.Initialize();
 	brightnessSensorController.Initialize();

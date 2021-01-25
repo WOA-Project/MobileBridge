@@ -110,6 +110,7 @@
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\pch.cpp" />
     <ClCompile Include="src\Utilities.cpp" />
+    <ClCompile Include="src\WCOSWorkarounds.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Audio Syncing Controller.h" />
@@ -128,6 +129,7 @@
     <ClInclude Include="Include\rilapi.h" />
     <ClInclude Include="Include\rilapitypes.h" />
     <ClInclude Include="Include\Utilities.h" />
+    <ClInclude Include="Include\WCOSWorkarounds.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MobileBridgeSvc.rc" />
