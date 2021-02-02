@@ -4,7 +4,6 @@
 #include <Windows.h>
 #include <fstream>
 #include <map>
-#include "Utilities.h"
 #include <winreg.h>
 
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)

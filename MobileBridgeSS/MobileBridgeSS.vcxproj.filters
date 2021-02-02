@@ -37,6 +37,9 @@
     <ClCompile Include="src\WNFHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\WCOSWorkarounds.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Audio Syncing Controller.h">
@@ -87,6 +90,9 @@
     <ClInclude Include="Include\Utilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Include\WCOSWorkarounds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -103,7 +109,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MobileBridgeSvc.rc">
+    <ResourceCompile Include="MobileBridgeSS.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

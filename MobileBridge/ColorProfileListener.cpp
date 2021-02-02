@@ -8,7 +8,7 @@
 #include <winerror.h>
 #include <WinBase.h>
 
-#define PROFILE_KEY_PATH L"Software\\Microsoft\\Windows NT\\CurrentVersion\\ICM\\ProfileAssociations\\Display\\{4d36e96e-e325-11ce-bfc1-08002be10318}\\0002"
+#define PROFILE_KEY_PATH L"Software\\Microsoft\\Windows NT\\CurrentVersion\\ICM\\ProfileAssociations\\Display\\{4d36e96e-e325-11ce-bfc1-08002be10318}\\0001"
 #define COLOR_AND_LIGHT_KEY_PATH L"SOFTWARE\\OEM\\Nokia\\Display\\ColorAndLight"
 
 const wchar_t* CS_blueLightState = L"windows.data.bluelightreduction.bluelightreductionstate";

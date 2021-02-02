@@ -12,16 +12,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <CppWinRTOptimized>true</CppWinRTOptimized>
-    <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
     <MinimalCoreWin>true</MinimalCoreWin>
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{DD865AF1-4740-4ADC-9FBA-14B8A1D938F8}</ProjectGuid>
+    <ProjectGuid>{DD865AF1-4740-4ADC-9FBA-14B8A1D938F9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>MobileBridgeSvc</RootNamespace>
+    <RootNamespace>MobileBridgeSS</RootNamespace>
     <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.18362.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.17134.0</WindowsTargetPlatformMinVersion>
-    <ProjectName>MobileBridgeSvc</ProjectName>
+    <ProjectName>MobileBridgeSS</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
@@ -73,7 +71,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>mincore.lib;mincore_downlevel.lib;Libs\ARM64\ntdll.lib;Libs\ARM64\wwapi.lib;Libs\ARM64\rilproxy.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mincore.lib;mincore_downlevel.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>kernel32.lib</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -92,67 +90,26 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mincore.lib;mincore_downlevel.lib;Libs\ARM64\ntdll.lib;Libs\ARM64\wwapi.lib;Libs\ARM64\rilproxy.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mincore.lib;mincore_downlevel.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>kernel32.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Audio Syncing Controller.cpp" />
-    <ClCompile Include="src\Topology FM Controller.cpp" />
-    <ClCompile Include="src\Topology Telephony Controller.cpp" />
-    <ClCompile Include="src\Brightness Sensor Controller.cpp" />
-    <ClCompile Include="src\Data Management Controller.cpp" />
-    <ClCompile Include="src\DeviceInfo.cpp" />
-    <ClCompile Include="src\Power Supply Controller.cpp" />
-    <ClCompile Include="src\RILInit.cpp" />
-    <ClCompile Include="src\WNFHandler.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\pch.cpp" />
-    <ClCompile Include="src\Utilities.cpp" />
+    <ClCompile Include="src\WCOSWorkarounds.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Audio Syncing Controller.h" />
-    <ClInclude Include="Include\Topology FM Controller.h" />
-    <ClInclude Include="Include\Topology Telephony Controller.h" />
-    <ClInclude Include="Include\Brightness Sensor Controller.h" />
-    <ClInclude Include="Include\Data Management Controller.h" />
-    <ClInclude Include="Include\DeviceInfo.h" />
-    <ClInclude Include="Include\Power Supply Controller.h" />
-    <ClInclude Include="Include\RILInit.h" />
-    <ClInclude Include="Include\WNFHandler.h" />
     <ClInclude Include="Include\Main.h" />
     <ClInclude Include="Include\pch.h" />
-    <ClInclude Include="Include\resource.h" />
-    <ClInclude Include="Include\Wwapi.h" />
-    <ClInclude Include="Include\rilapi.h" />
-    <ClInclude Include="Include\rilapitypes.h" />
-    <ClInclude Include="Include\Utilities.h" />
+    <ClInclude Include="Include\WCOSWorkarounds.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MobileBridgeSvc.rc" />
-  </ItemGroup>
-  <!--<ItemGroup>
-    <Midl Include="Include\rilapitypes.idl" />
-  </ItemGroup>-->
-  <ItemGroup>
-    <Reference Include="Windows.Internal.Graphics.Display.DisplayEnhancementManagement.DisplayEnhancementManagement">
-      <HintPath>Libs\Windows.Internal.Graphics.Display.DisplayEnhancementManagement.winmd</HintPath>
-      <IsWinMDFile>true</IsWinMDFile>
-    </Reference>
+    <ResourceCompile Include="MobileBridgeSS.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.targets" Condition="Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.CppWinRT.2.0.201113.7\build\native\Microsoft.Windows.CppWinRT.targets'))" />
-  </Target>
 </Project>

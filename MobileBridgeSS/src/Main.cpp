@@ -1,26 +1,8 @@
 #include <string>
 #include "Main.h"
-#include "Audio Syncing Controller.h"
-#include "Brightness Sensor Controller.h"
-#include "Data Management Controller.h"
-#include "DeviceInfo.h"
-#include "RILInit.h"
-#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
-#include "Power Supply Controller.h"
-#endif
-#include <winrt/Windows.Foundation.h>
-#include "Utilities.h"
+#include "WCOSWorkarounds.h"
 
-using namespace winrt;
-
-AudioSyncingController audioSyncingController;
-BrightnessSensorController brightnessSensorController;
-DataManagementController dataManagementController;
-RILInit rilInit;
-DeviceInfo deviceInfo;
-#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
-PowerSupplyController powerSupplyController;
-#endif
+WCOSWorkarounds workarounds;
 
 int _tmain(int argc, TCHAR* argv[])
 {
@@ -41,46 +23,6 @@ int _tmain(int argc, TCHAR* argv[])
 
 	return 0;
 }
-
-#define BUFSIZE MAX_PATH
-
-int TryToMountDPPIfNeeded()
-{
-	char Buf[BUFSIZE];     // temporary buffer for volume name
-
-	if (Utilities::DoesDirectoryExist("C:\\DPP"))
-	{
-		return -4;
-	}
-
-	HANDLE bFlag = FindFirstVolume(
-		Buf, // output volume name buffer
-		BUFSIZE  // size of volume name buffer
-	);
-
-	if (bFlag == NULL)
-	{
-		return -1;
-	}
-
-	if (_wmkdir(L"C:\\DPP") != 0)
-	{
-		return -2;
-	}
-
-	BOOL res = SetVolumeMountPoint(
-		"C:\\DPP\\", // mount point
-		Buf    // volume to be mounted
-	);
-
-	if (res == NULL)
-	{
-		return -3;
-	}
-
-	return 0;
-}
-
 
 VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 {
@@ -182,26 +124,7 @@ VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode)
 
 DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 {
-	init_apartment();
-
-	TryToMountDPPIfNeeded();
-	audioSyncingController.Initialize();
-	brightnessSensorController.Initialize();
-	rilInit.Initialize(g_ServiceStopEvent);
-	dataManagementController.Initialize(g_ServiceStopEvent);
-	deviceInfo.Initialize();
-
-#ifdef ENABLE_POWER_SUPPLY_NOTIFIER
-	Sleep(4000);
-	powerSupplyController.Initialize();
-#endif
-
-	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
-	{
-		Sleep(1000);
-	}
-
-	audioSyncingController.DeInitialize();
+	workarounds.Initialize();
 
 	return ERROR_SUCCESS;
 }
