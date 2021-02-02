@@ -331,47 +331,54 @@ VOID CheckForNightLight()
 {
 	//Preload data first
 
-	cloudStoreInstance = CloudStore::CreateInstance((CloudStoreOptions)((int)CloudStoreOptions::UseCurrentUser | (int)CloudStoreOptions::UseDefaultWebAccount), NULL, NULL, L"");
+	try
+	{
+		cloudStoreInstance = CloudStore::CreateInstance((CloudStoreOptions)((int)CloudStoreOptions::UseCurrentUser | (int)CloudStoreOptions::UseDefaultWebAccount), NULL, NULL, L"");
 
-	auto dataSettings = cloudStoreInstance.Load(PartitionKind::None, L"", L"", L"", CS_blueLightSettings, LoadOptions::LocalOnly, L"");
-	auto jsonSettings = cloudStoreInstance.ToJson(CS_blueLightSettings, dataSettings.Data());
-	auto strSettings = jsonSettings.GetNamedObject(L"Data");
+		auto dataSettings = cloudStoreInstance.Load(PartitionKind::None, L"", L"", L"", CS_blueLightSettings, LoadOptions::LocalOnly, L"");
+		auto jsonSettings = cloudStoreInstance.ToJson(CS_blueLightSettings, dataSettings.Data());
+		auto strSettings = jsonSettings.GetNamedObject(L"Data");
 
-	auto isPreviewing = strSettings.GetNamedBoolean(L"previewColorTemperatureChanges");
-	auto colorTemperature = (INT)strSettings.GetNamedNumber(L"targetColorTemperature");
+		auto isPreviewing = strSettings.GetNamedBoolean(L"previewColorTemperatureChanges");
+		auto colorTemperature = (INT)strSettings.GetNamedNumber(L"targetColorTemperature");
 
-	auto dataState = cloudStoreInstance.Load(PartitionKind::None, L"", L"", L"", CS_blueLightState, LoadOptions::LocalOnly, L"");
-	auto jsonState = cloudStoreInstance.ToJson(CS_blueLightState, dataState.Data());
-	auto strState = jsonState.GetNamedObject(L"Data");
+		auto dataState = cloudStoreInstance.Load(PartitionKind::None, L"", L"", L"", CS_blueLightState, LoadOptions::LocalOnly, L"");
+		auto jsonState = cloudStoreInstance.ToJson(CS_blueLightState, dataState.Data());
+		auto strState = jsonState.GetNamedObject(L"Data");
 
-	auto isEnabled = 1 - (INT)strState.GetNamedNumber(L"state");
+		auto isEnabled = 1 - (INT)strState.GetNamedNumber(L"state");
 
-	NewStatus(isEnabled, isPreviewing, colorTemperature);
+		NewStatus(isEnabled, isPreviewing, colorTemperature);
 
-	//set up watchers
+		//set up watchers
 
-	blueLightReductionSettingsWatcher = cloudStoreInstance.CreateWatcher(PartitionKind::None, L"", L"", L"", CS_blueLightSettings, (CloudDataChangeKinds)((int)CloudDataChangeKinds::CloudDataLoaded | (int)CloudDataChangeKinds::CloudDataChanged), 0, L"");
+		blueLightReductionSettingsWatcher = cloudStoreInstance.CreateWatcher(PartitionKind::None, L"", L"", L"", CS_blueLightSettings, (CloudDataChangeKinds)((int)CloudDataChangeKinds::CloudDataLoaded | (int)CloudDataChangeKinds::CloudDataChanged), 0, L"");
 
-	blueLightReductionSettingsWatcher.DataChanged([=](CloudStoreDataWatcher sender, CloudStoreDataChangedEventArgs args) {
-		auto json = cloudStoreInstance.ToJson(CS_blueLightSettings, args.DataItem().Data());
-		auto str = json.GetNamedObject(L"Data");
+		blueLightReductionSettingsWatcher.DataChanged([=](CloudStoreDataWatcher sender, CloudStoreDataChangedEventArgs args) {
+			auto json = cloudStoreInstance.ToJson(CS_blueLightSettings, args.DataItem().Data());
+			auto str = json.GetNamedObject(L"Data");
 
-		auto isPreviewing = str.GetNamedBoolean(L"previewColorTemperatureChanges");
-		auto colorTemperature = (INT)str.GetNamedNumber(L"targetColorTemperature");
+			auto isPreviewing = str.GetNamedBoolean(L"previewColorTemperatureChanges");
+			auto colorTemperature = (INT)str.GetNamedNumber(L"targetColorTemperature");
 
-		NewStatus(_isEnabled, isPreviewing, colorTemperature);
-		});
+			NewStatus(_isEnabled, isPreviewing, colorTemperature);
+			});
 
-	blueLightReductionStateWatcher = cloudStoreInstance.CreateWatcher(PartitionKind::None, L"", L"", L"", CS_blueLightState, (CloudDataChangeKinds)((int)CloudDataChangeKinds::CloudDataLoaded | (int)CloudDataChangeKinds::CloudDataChanged), 0, L"");
+		blueLightReductionStateWatcher = cloudStoreInstance.CreateWatcher(PartitionKind::None, L"", L"", L"", CS_blueLightState, (CloudDataChangeKinds)((int)CloudDataChangeKinds::CloudDataLoaded | (int)CloudDataChangeKinds::CloudDataChanged), 0, L"");
 
-	blueLightReductionStateWatcher.DataChanged([=](CloudStoreDataWatcher sender, CloudStoreDataChangedEventArgs args) {
-		auto json = cloudStoreInstance.ToJson(CS_blueLightState, args.DataItem().Data());
-		auto str = json.GetNamedObject(L"Data");
+		blueLightReductionStateWatcher.DataChanged([=](CloudStoreDataWatcher sender, CloudStoreDataChangedEventArgs args) {
+			auto json = cloudStoreInstance.ToJson(CS_blueLightState, args.DataItem().Data());
+			auto str = json.GetNamedObject(L"Data");
 
-		auto isEnabled = 1 - (INT)str.GetNamedNumber(L"state");
+			auto isEnabled = 1 - (INT)str.GetNamedNumber(L"state");
 
-		NewStatus(isEnabled, _isPreviewing, _colorTemperature);
-		});
+			NewStatus(isEnabled, _isPreviewing, _colorTemperature);
+			});
+	}
+	catch (winrt::hresult_error const& ex)
+	{
+		//TODO: add support for <= 18362
+	}
 }
 
 VOID NewStatus(BOOL isEnabled, BOOL isPreviewing, INT colorTemperature)
