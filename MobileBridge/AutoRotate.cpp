@@ -22,25 +22,36 @@ CRITICAL_SECTION g_AutoRotationCriticalSection;
 //
 NTSTATUS NotifyAutoRotateAlpcPort(HANDLE PortHandle, INT Orientation)
 {
-	UCHAR RotationMessage[56];
+	//UCHAR RotationMessage[56];
+	ROTATION_COMMAND_MESSAGE RotationCommandMessage;
 	NTSTATUS Status;
 
 	if (PortHandle == NULL) return STATUS_INVALID_PARAMETER;
 
-#if !defined(_M_ARM64) && !defined(_M_X64)
-	// Only 64bit OS is currently validated
-	return 0xC00000BB;
-#endif
+//#if !defined(_M_ARM64) && !defined(_M_X64)
+//	// Only 64bit OS is currently validated
+//	return 0xC00000BB;
+//#endif
 
 	EnterCriticalSection(&g_AutoRotationCriticalSection);
 
-	RtlZeroMemory(&RotationMessage, sizeof(RotationMessage));
+	/*RtlZeroMemory(&RotationMessage, sizeof(RotationMessage));
 	*(unsigned short*)&RotationMessage = 16;
 	*(unsigned short*)&RotationMessage[2] = 56;
 	*(unsigned short*)&RotationMessage[4] = 1;
 	*(unsigned int*)&RotationMessage[40] = 2;
-	*(unsigned int*)&RotationMessage[52] = Orientation;
-	Status = NtAlpcSendWaitReceivePort(PortHandle, 0, (PVOID)&RotationMessage, NULL, NULL, NULL, NULL, NULL);
+	*(unsigned int*)&RotationMessage[52] = Orientation;*/
+
+	RtlZeroMemory(&RotationCommandMessage, sizeof(RotationCommandMessage));
+
+	RotationCommandMessage.PortMessage.u1.s1.DataLength = sizeof(RotationCommandMessage.RotationMessage);
+	RotationCommandMessage.PortMessage.u1.s1.TotalLength = sizeof(RotationCommandMessage);
+	RotationCommandMessage.PortMessage.u2.s2.Type = 1;
+
+	RotationCommandMessage.RotationMessage.Type = 2;
+	RotationCommandMessage.RotationMessage.Orientation = Orientation;
+
+	Status = NtAlpcSendWaitReceivePort(PortHandle, 0, (PVOID)&RotationCommandMessage, NULL, NULL, NULL, NULL, NULL);
 
 	LeaveCriticalSection(&g_AutoRotationCriticalSection);
 

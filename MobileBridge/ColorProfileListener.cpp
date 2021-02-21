@@ -47,8 +47,8 @@ std::wstring ReadSelectedProfile()
 			return L"";
 		}
 
-		ULONG64 index = 0;
-		ULONG64 len = wcslen(&temp[0]);
+		size_t index = 0;
+		size_t len = wcslen(&temp[0]);
 
 		while (len > 0)
 		{

@@ -97,9 +97,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>kernel32.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='Win32'">
@@ -127,20 +129,23 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mincore.lib;mincore_downlevel.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mincore.lib;mincore_downlevel.lib;ntdll.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mainCRTStartup</EntryPointSymbol>
       <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">mainCRTStartup</EntryPointSymbol>
       <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mainCRTStartup</EntryPointSymbol>
       <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mainCRTStartup</EntryPointSymbol>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>kernel32.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AutoRotate.h" />
     <ClInclude Include="ColorProfileListener.h" />
     <ClInclude Include="HapticsNotifications.h" />
+    <ClInclude Include="Main.h" />
     <ClInclude Include="NtAlpc.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Profile.h" />

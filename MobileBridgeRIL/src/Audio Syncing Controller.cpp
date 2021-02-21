@@ -1,11 +1,11 @@
 #include "Audio Syncing Controller.h"
-#include "Topology FM Controller.h"
+#include "Topology Telephony Controller.h"
 #include <endpointvolume.h>
 
 HRESULT hr;
 IMMDeviceEnumerator* deviceEnumerator = NULL;
 
-FmController Fm;
+TelephonyController Telephony;
 
 float GetSystemVolume() {
 	HRESULT hr;
@@ -95,11 +95,11 @@ public:
 
 		if (DesiredMute)
 		{
-			Fm.SetFmVolume(0);
+			Telephony.SetTelephonyVolume(0);
 		}
 		else
 		{
-			Fm.SetFmVolume(DesiredVolume);
+			Telephony.SetTelephonyVolume(DesiredVolume);
 		}
 
 		return S_OK;
@@ -147,11 +147,11 @@ public:
 		{
 			if (DesiredMute)
 			{
-				Fm.SetFmVolume(0);
+				Telephony.SetTelephonyVolume(0);
 			}
 			else
 			{
-				Fm.SetFmVolume(DesiredVolume);
+				Telephony.SetTelephonyVolume(DesiredVolume);
 			}
 		}
 
@@ -262,18 +262,18 @@ HRESULT AudioSyncingController::Initialize()
 	CComPtr<IMMDevice>            defaultDevice  = NULL;
 	CVolumeOtherNotification* volumeNotification;
 
-	const auto TopologyFmInitialiseResult = Fm.Initialize();
+	const auto TopologyTelInitialiseResult = Telephony.Initialize();
 
 	currentVolume = GetSystemVolume();
 	currentMute = GetIsMuted();
 
 	if (currentMute)
 	{
-		Fm.SetFmVolume(0);
+		Telephony.SetTelephonyVolume(0);
 	}
 	else
 	{
-		Fm.SetFmVolume(currentVolume);
+		Telephony.SetTelephonyVolume(currentVolume);
 	}
 
 	hr = CoInitialize(NULL);
@@ -288,11 +288,11 @@ HRESULT AudioSyncingController::Initialize()
 	//
 	volumeNotification = new CVolumeOtherNotification();
 
-	defaultDevice = Fm.GetMMDevice();
+	defaultDevice = Telephony.GetMMDevice();
 	hr = defaultDevice->Activate(
-		__uuidof(IAudioEndpointVolume),
+		__uuidof(IAudioEndpointVolume), 
 		CLSCTX_ALL,
-		NULL,
+		NULL, 
 		(VOID**)&endpointVolume);
 
 	if (SUCCEEDED(hr))
@@ -300,7 +300,7 @@ HRESULT AudioSyncingController::Initialize()
 		hr = endpointVolume->RegisterControlChangeNotify(volumeNotification);
 	}
 	defaultDevice = NULL;
-
+	
 	return ERROR_SUCCESS;
 }
 

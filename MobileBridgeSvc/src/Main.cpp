@@ -2,9 +2,7 @@
 #include "Main.h"
 #include "Audio Syncing Controller.h"
 #include "Brightness Sensor Controller.h"
-#include "Data Management Controller.h"
 #include "DeviceInfo.h"
-#include "RILInit.h"
 #ifdef ENABLE_POWER_SUPPLY_NOTIFIER
 #include "Power Supply Controller.h"
 #endif
@@ -15,8 +13,6 @@ using namespace winrt;
 
 AudioSyncingController audioSyncingController;
 BrightnessSensorController brightnessSensorController;
-DataManagementController dataManagementController;
-RILInit rilInit;
 DeviceInfo deviceInfo;
 #ifdef ENABLE_POWER_SUPPLY_NOTIFIER
 PowerSupplyController powerSupplyController;
@@ -185,10 +181,10 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 	init_apartment();
 
 	TryToMountDPPIfNeeded();
+#ifdef _M_ARM64
 	audioSyncingController.Initialize();
+#endif
 	brightnessSensorController.Initialize();
-	rilInit.Initialize(g_ServiceStopEvent);
-	dataManagementController.Initialize(g_ServiceStopEvent);
 	deviceInfo.Initialize();
 
 #ifdef ENABLE_POWER_SUPPLY_NOTIFIER

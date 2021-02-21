@@ -11,10 +11,52 @@ extern "C" {  // only need to export C interface if
 			  // used by C++ source code
 #endif
 
-	typedef struct _QUAD
+	typedef struct _PORT_MESSAGE
 	{
-		double DoNotUseThisField;
-	} QUAD, * PQUAD, UQUAD, * PUQUAD;
+		union
+		{
+			struct
+			{
+				USHORT DataLength;
+				USHORT TotalLength;
+			} s1;
+			ULONG Length;
+		} u1;
+		union
+		{
+			struct
+			{
+				USHORT Type;
+				USHORT DataInfoOffset;
+			} s2;
+			ULONG ZeroInit;
+		} u2;
+		union
+		{
+			CLIENT_ID ClientId;
+			double DoNotUseThisField;
+		};
+		ULONG MessageId;
+		union
+		{
+			SIZE_T ClientViewSize;
+			ULONG CallbackId;
+		};
+	} PORT_MESSAGE, * PPORT_MESSAGE;
+
+	typedef struct _ROTATION_MESSAGE
+	{
+		UINT Type;
+		UINT Reserved0;
+		UINT Reserved1;
+		UINT Orientation;
+	} ROTATION_MESSAGE, * PROTATION_MESSAGE;
+
+	typedef struct _ROTATION_COMMAND_MESSAGE
+	{
+		PORT_MESSAGE PortMessage;
+		ROTATION_MESSAGE RotationMessage;
+	} ROTATION_COMMAND_MESSAGE, * PROTATION_COMMAND_MESSAGE;
 
 	typedef struct _ALPC_MESSAGE_ATTRIBUTES
 	{

@@ -1,12 +1,15 @@
-﻿#include "pch.h"
+#include <string>
 #include "Main.h"
-#include "HapticsNotifications.h"
-#include "AutoRotate.h"
-#include "ColorProfileListener.h"
+#include "Audio Syncing Controller.h"
+#include "Data Management Controller.h"
+#include "RILInit.h"
+#include "Utilities.h"
 
-using namespace winrt;
+AudioSyncingController audioSyncingController;
+DataManagementController dataManagementController;
+RILInit rilInit;
 
-int main(int argc, TCHAR* argv[])
+int _tmain(int argc, TCHAR* argv[])
 {
 	SERVICE_TABLE_ENTRY ServiceTable[] =
 	{
@@ -26,6 +29,8 @@ int main(int argc, TCHAR* argv[])
 	return 0;
 }
 
+#define BUFSIZE MAX_PATH
+
 VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 {
 	DWORD Status = E_FAIL;
@@ -40,7 +45,7 @@ VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 
 	// Tell the service controller we are starting
 	ZeroMemory(&g_ServiceStatus, sizeof(g_ServiceStatus));
-	g_ServiceStatus.dwServiceType = SERVICE_USER_OWN_PROCESS;
+	g_ServiceStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
 	g_ServiceStatus.dwControlsAccepted = 0;
 	g_ServiceStatus.dwCurrentState = SERVICE_START_PENDING;
 	g_ServiceStatus.dwWin32ExitCode = 0;
@@ -126,28 +131,16 @@ VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode)
 
 DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 {
-	init_apartment();
-
-	std::thread tHaptics(HapticsNotificationsMain);
-	std::thread tAutoRotate(AutoRotateMain);
-	ColorProfileListenerMain();
+	audioSyncingController.Initialize();
+	rilInit.Initialize(g_ServiceStopEvent);
+	dataManagementController.Initialize(g_ServiceStopEvent);
 
 	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
 	{
 		Sleep(1000);
 	}
 
+	audioSyncingController.DeInitialize();
+
 	return ERROR_SUCCESS;
 }
-
-/*int main()
-{
-	init_apartment();
-
-	std::thread tHaptics(HapticsNotificationsMain);
-	std::thread tAutoRotate(AutoRotateMain);
-	ColorProfileListenerMain();
-
-	tHaptics.join();
-	tAutoRotate.join();
-}*/

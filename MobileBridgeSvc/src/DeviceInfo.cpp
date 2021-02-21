@@ -16,6 +16,8 @@ struct cmp_str
 
 std::map<const char*, const char*, cmp_str> device_map =
 {
+	{ "RM-1045", "Lumia 930" },
+	{ "RM-1087", "Lumia 930" },
 	{ "RM-1085", "Lumia 950 XL" },
 	{ "RM-1104", "Lumia 950" },
 	{ "RM-1105", "Lumia 950" },
@@ -60,6 +62,8 @@ const char* GetSystemOnChipStr(char* x)
 {
 	if (std::strcmp(x, "RM-1104") == 0 || std::strcmp(x, "RM-1105") == 0 || std::strcmp(x, "RM-1106") == 0 || std::strcmp(x, "RM-1118") == 0)
 		return "8992";
+	if (std::strcmp(x, "RM-1045") == 0 || std::strcmp(x, "RM-1087") == 0)
+		return "8974";
 	return "8994";
 }
 
@@ -93,7 +97,7 @@ HRESULT DeviceInfo::Initialize()
 	char ProductCode[512] = { 0 };
 	char HardwareRevision[512] = { 0 };
 	const char* MMOPath = "C:\\DPP\\MMO\\product.dat";
-	const char* NMOPath = "C:\\DPP\\NMO\\product.dat";
+	const char* NMOPath = "C:\\DPP\\Nokia\\product.dat";
 
 	BOOL MMOPresent = Utilities::DoesDirectoryExist("C:\\DPP\\MMO");
 	BOOL NMOPresent = Utilities::DoesDirectoryExist("C:\\DPP\\Nokia");

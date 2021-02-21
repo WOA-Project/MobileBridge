@@ -105,6 +105,18 @@ typedef ULONGLONG WNF_STATE_NAME, * PWNF_STATE_NAME;
 #define WNF_CELL_WIFI_CALL_SETTINGS_CAN0 0xd8a0b2ea3beb075
 #define WNF_CELL_WIFI_CALL_SETTINGS_CAN1 0xd8a0b2ea3beb875
 
+typedef struct _WNF_CELL_CAN_CONFIGURATION_TYPE
+{
+	unsigned long cbSize;
+	unsigned long dwSlotAffinity;
+	int fVirtualRuimConfigured;
+	unsigned char rgbConfiguredIccid[10];
+	char Padding_38[2];
+	unsigned long cLinesIds;
+	unsigned char rgbLineIds[43][2];
+	char __PADDING__[2];
+} WNF_CELL_CAN_CONFIGURATION_TYPE, * PWNF_CELL_CAN_CONFIGURATION_TYPE;
+
 typedef struct _WNF_CELL_CONFIGURED_LINES_CAN_STRUCT
 {
 	DWORD dwSize = 116;
@@ -113,6 +125,7 @@ typedef struct _WNF_CELL_CONFIGURED_LINES_CAN_STRUCT
 	BYTE ICCID1[10];
 	short shReserved1 = 0;
 	DWORD dwReserved3 = 1;
+
 	BYTE ICCID2[10];
 	short shReserved2 = 0xA005i16;
 	DWORD dwReserved4 = 0x87000000;
