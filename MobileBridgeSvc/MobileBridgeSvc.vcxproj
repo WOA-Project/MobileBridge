@@ -27,7 +27,7 @@
     <ProjectGuid>{DD865AF1-4740-4ADC-9FBA-14B8A1D938F8}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MobileBridgeSvc</RootNamespace>
-    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.17763.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.17134.0</WindowsTargetPlatformMinVersion>
     <ProjectName>MobileBridgeSvc</ProjectName>
   </PropertyGroup>
@@ -165,25 +165,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Audio Syncing Controller.cpp" />
-    <ClCompile Include="src\Topology FM Controller.cpp" />
     <ClCompile Include="src\Brightness Sensor Controller.cpp" />
-    <ClCompile Include="src\DeviceInfo.cpp" />
     <ClCompile Include="src\Power Supply Controller.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\pch.cpp" />
-    <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Audio Syncing Controller.h" />
-    <ClInclude Include="Include\Topology FM Controller.h" />
     <ClInclude Include="Include\Brightness Sensor Controller.h" />
-    <ClInclude Include="Include\DeviceInfo.h" />
     <ClInclude Include="Include\Power Supply Controller.h" />
     <ClInclude Include="Include\Main.h" />
     <ClInclude Include="Include\pch.h" />
     <ClInclude Include="Include\resource.h" />
-    <ClInclude Include="Include\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MobileBridgeSvc.rc" />

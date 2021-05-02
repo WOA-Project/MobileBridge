@@ -1,10 +1,8 @@
 #pragma once
 #include "Profile.h"
+#include <winreg.h>
 
 VOID NewStatus(BOOL, BOOL, INT);
-
-VOID NightModeEnabled(INT);
-VOID NightModeDisabled();
 
 VOID ChangeColorProfile(std::wstring);
 VOID ChangeColorProfileNightLight(double);
@@ -12,7 +10,7 @@ VOID ChangeColorProfileNightLight(double);
 VOID CheckForProfileChangeFromExternal();
 VOID CheckForProfileChangeFromInternal();
 
-std::wstring ReadSelectedProfile();
+std::wstring ReadSelectedProfile(HKEY);
 
 VOID ProvisionDefaultProfileData();
 VOID ProvisionProfileListData();

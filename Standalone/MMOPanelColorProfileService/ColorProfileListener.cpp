@@ -8,24 +8,23 @@
 #include <winerror.h>
 #include <WinBase.h>
 
-#define PROFILE_KEY_PATH L"Software\\Microsoft\\Windows NT\\CurrentVersion\\ICM\\ProfileAssociations\\Display\\{4d36e96e-e325-11ce-bfc1-08002be10318}\\0002"
+#define PROFILE_KEY_PATH L"Software\\Microsoft\\Windows NT\\CurrentVersion\\ICM\\ProfileAssociations\\Display\\{4d36e96e-e325-11ce-bfc1-08002be10318}"
 #define COLOR_AND_LIGHT_KEY_PATH L"SOFTWARE\\OEM\\Nokia\\Display\\ColorAndLight"
 
 const wchar_t* CS_blueLightState = L"windows.data.bluelightreduction.bluelightreductionstate";
 const wchar_t* CS_blueLightSettings = L"windows.data.bluelightreduction.settings";
 
 // Back store to prevent multiple signaling.
-BOOL _nightLight = FALSE; //Default value.
-BOOL _isEnabled = FALSE; //Default value. This is another backstore.
-BOOL _isPreviewing = FALSE; //Default value.
-BOOL _loaded = FALSE; //Default value.
-INT _colorTemperature = 6500; //6500K is the default/standard white point
-std::wstring _lastFoundProfile = std::wstring(L""); //Default value.
+BOOL _nightLight = FALSE;                           // Default value.
+BOOL _isEnabled = FALSE;                            // Default value. This is another backstore.
+BOOL _isPreviewing = FALSE;                         // Default value.
+BOOL _loaded = FALSE;                               // Default value.
+INT _colorTemperature = 6500;                       // 6500K is the default/standard white point
+std::wstring _lastFoundProfile = std::wstring(L""); // Default value.
 
-HKEY profileKey = NULL;
 HKEY colorAndLightKey = NULL;
 
-std::wstring ReadSelectedProfile()
+std::wstring ReadSelectedProfile(HKEY profileKey)
 {
 	DWORD type, size;
 	std::vector<std::wstring> target;
@@ -67,53 +66,96 @@ std::wstring ReadSelectedProfile()
 	return L"";
 }
 
-VOID ProvisionDefaultProfileData()
+VOID KeyCallback(HKEY);
+
+VOID PerformOperationOnProfileKeys(decltype(KeyCallback) callBack)
 {
-	WCHAR buf[255] = { 0 };
-	ULONG dwType = 0;
+	WCHAR buf[MAX_PATH] = { 0 };
 	ULONG dwBufSize = sizeof(buf);
+
+	WCHAR buf2[MAX_PATH] = { 0 };
+	ULONG dwBuf2Size = sizeof(buf2);
+
+	DWORD i = 0;
+	ULONG dwType = 0;
+
+	HKEY hSpecificProfileKey;
 
 	HKEY hProfileKey;
 	LSTATUS nError = RegOpenKeyEx(HKEY_CURRENT_USER, PROFILE_KEY_PATH, NULL, KEY_ALL_ACCESS, &hProfileKey);
 
-	if (nError == ERROR_FILE_NOT_FOUND)
+	if (nError < 0 || hProfileKey == NULL)
 	{
-		RegCreateKeyEx(HKEY_CURRENT_USER, PROFILE_KEY_PATH, NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hProfileKey, NULL);
+		if (nError == ERROR_FILE_NOT_FOUND)
+		{
+			nError = RegCreateKeyEx(HKEY_CURRENT_USER, PROFILE_KEY_PATH L"\\0001", NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hProfileKey, NULL);
+			if (nError < 0)
+			{
+				return;
+			}
 
-		const wchar_t sz[] = L"Advanced.icm\0Cool.icm\0Vivid.icm\0Standard.icm\0";
-
-		RegSetValueEx(hProfileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
-		RegSetValueEx(hProfileKey, L"ICMProfileBackup", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
-
-		RegSetValueEx(hProfileKey, L"ICMProfileAC", NULL, REG_MULTI_SZ, NULL, 0);
-		RegSetValueEx(hProfileKey, L"ICMProfileSnapshot", NULL, REG_MULTI_SZ, NULL, 0);
-		RegSetValueEx(hProfileKey, L"ICMProfileSnapshotAC", NULL, REG_MULTI_SZ, NULL, 0);
-
-		ULONG data = 1;
-		RegSetValueEx(hProfileKey, L"UsePerUserProfiles", NULL, REG_DWORD, (LPBYTE)&data, sizeof(unsigned long));
+			nError = RegOpenKeyEx(HKEY_CURRENT_USER, PROFILE_KEY_PATH, NULL, KEY_ALL_ACCESS, &hProfileKey);
+			if (nError < 0)
+			{
+				return;
+			}
+		}
+		else
+		{
+			return;
+		}
 	}
 
-	dwBufSize = 0;
-	RegQueryValueEx(hProfileKey, L"ICMProfile", NULL, &dwType, (BYTE*)buf, &dwBufSize);
-	if (dwBufSize == 0)
+	RtlZeroMemory(buf, dwBufSize);
+	while (RegEnumKeyEx(hProfileKey, i++, buf, &dwBufSize, NULL, NULL, NULL, NULL) != ERROR_NO_MORE_ITEMS)
 	{
-		CONST WCHAR sz[] = L"Advanced.icm\0Cool.icm\0Vivid.icm\0Standard.icm\0";
+		RtlZeroMemory(buf2, dwBuf2Size);
+		swprintf_s(buf2, PROFILE_KEY_PATH L"\\%s", buf);
 
-		RegSetValueEx(hProfileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
-		RegSetValueEx(hProfileKey, L"ICMProfileBackup", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
+		nError = RegOpenKeyEx(HKEY_CURRENT_USER, buf2, NULL, KEY_ALL_ACCESS, &hSpecificProfileKey);
+		if (nError < 0 || hSpecificProfileKey == NULL)
+		{
+			continue;
+		}
 
-		RegSetValueEx(hProfileKey, L"ICMProfileAC", NULL, REG_MULTI_SZ, NULL, 0);
-		RegSetValueEx(hProfileKey, L"ICMProfileSnapshot", NULL, REG_MULTI_SZ, NULL, 0);
-		RegSetValueEx(hProfileKey, L"ICMProfileSnapshotAC", NULL, REG_MULTI_SZ, NULL, 0);
+		dwBufSize = 0;
+		RegQueryValueEx(hSpecificProfileKey, L"ICMProfile", NULL, &dwType, (BYTE*)buf, &dwBufSize);
+		if (dwBufSize == 0)
+		{
+			CONST WCHAR sz[] = L"Advanced.icm\0Cool.icm\0Vivid.icm\0Standard.icm\0";
 
-		DWORD data = 1;
-		RegSetValueEx(hProfileKey, L"UsePerUserProfiles", NULL, REG_DWORD, (LPBYTE)&data, sizeof(DWORD));
+			RegSetValueEx(hSpecificProfileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
+			RegSetValueEx(hSpecificProfileKey, L"ICMProfileBackup", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
+
+			RegSetValueEx(hSpecificProfileKey, L"ICMProfileAC", NULL, REG_MULTI_SZ, NULL, 0);
+			RegSetValueEx(hSpecificProfileKey, L"ICMProfileSnapshot", NULL, REG_MULTI_SZ, NULL, 0);
+			RegSetValueEx(hSpecificProfileKey, L"ICMProfileSnapshotAC", NULL, REG_MULTI_SZ, NULL, 0);
+
+			DWORD data = 1;
+			RegSetValueEx(hSpecificProfileKey, L"UsePerUserProfiles", NULL, REG_DWORD, (LPBYTE)&data, sizeof(DWORD));
+		}
+
+		if (callBack != NULL)
+		{
+			callBack(hSpecificProfileKey);
+		}
+		else
+		{
+			RegCloseKey(hSpecificProfileKey);
+		}
+
+		RtlZeroMemory(buf, dwBufSize);
 	}
 
 	RegCloseKey(hProfileKey);
 }
 
-VOID ProvisionProfileListData()
+VOID ProvisionDefaultProfileData()
+{
+	PerformOperationOnProfileKeys(NULL);
+}
+
+VOID ProvisionProfileListDataInternal(HKEY profileKey)
 {
 	WCHAR buf[255] = { 0 };
 	DWORD dwType = 0;
@@ -175,6 +217,13 @@ VOID ProvisionProfileListData()
 			RegSetValueEx(profileKey, L"ICMProfileBackup", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
 		}
 	}
+
+	RegCloseKey(profileKey);
+}
+
+VOID ProvisionProfileListData()
+{
+	PerformOperationOnProfileKeys(ProvisionProfileListDataInternal);
 }
 
 VOID CheckForProfileChangeFromExternal()
@@ -196,22 +245,35 @@ VOID CheckForProfileChangeFromExternal()
 	}
 }
 
+HKEY profileKeys[255] = { 0 };
+HANDLE hEvents[255] = { 0 };
+int keyCount = 0;
+
+VOID AddKeyToArray(HKEY key)
+{
+	hEvents[keyCount] = CreateEvent(NULL, true, false, NULL);
+	RegNotifyChangeKeyValue(key, true, REG_NOTIFY_CHANGE_LAST_SET, hEvents[keyCount], true);
+	profileKeys[keyCount++] = key;
+}
+
 VOID CheckForProfileChangeFromInternal()
 {
-	HANDLE hEvent = CreateEvent(NULL, true, false, NULL);
-
-	RegNotifyChangeKeyValue(profileKey, true, REG_NOTIFY_CHANGE_LAST_SET, hEvent, true);
+	PerformOperationOnProfileKeys(AddKeyToArray);
 
 	while (true)
 	{
-		if (WaitForSingleObject(hEvent, INFINITE) == WAIT_FAILED)
+		DWORD result = WaitForMultipleObjects(keyCount, hEvents, FALSE, INFINITE);
+		if (result == WAIT_FAILED || result < WAIT_OBJECT_0 || result >= WAIT_OBJECT_0 + keyCount)
 		{
 			exit(0);
 		}
 
+		HANDLE hEvent = hEvents[result - WAIT_OBJECT_0];
+		HKEY profileKey = profileKeys[result - WAIT_OBJECT_0];
+
 		if (!_nightLight)
 		{
-			std::wstring tmpstring = ReadSelectedProfile();
+			std::wstring tmpstring = ReadSelectedProfile(profileKey);
 
 			if (tmpstring == L"Night light.icm")
 			{
@@ -397,17 +459,21 @@ VOID NewStatus(BOOL isEnabled, BOOL isPreviewing, INT colorTemperature)
 	_isPreviewing = isPreviewing;
 }
 
+VOID EnableNightLightInternal(HKEY profileKey)
+{
+	CONST WCHAR sz[] = L"Night light.icm\0";
+	RegSetValueEx(profileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
+	RegCloseKey(profileKey);
+}
+
 VOID EnableNightLight(ULONG colorTemperature)
 {
 	_nightLight = true;
-
-	CONST WCHAR sz[] = L"Night light.icm\0";
-	RegSetValueEx(profileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)sz, sizeof(sz));
-
+	PerformOperationOnProfileKeys(EnableNightLightInternal);
 	ChangeColorProfileNightLight(colorTemperature);
 }
 
-VOID DisableNightLight()
+VOID DisableNightLightInternal(HKEY profileKey)
 {
 	wchar_t buf[255] = { 0 };
 	DWORD dwType = 0;
@@ -416,11 +482,16 @@ VOID DisableNightLight()
 	RegQueryValueEx(profileKey, L"ICMProfileBackup", NULL, &dwType, (BYTE*)buf, &dwBufSize);
 	RegSetValueEx(profileKey, L"ICMProfile", NULL, REG_MULTI_SZ, (LPBYTE)buf, dwBufSize);
 
-	std::wstring tmpstring = ReadSelectedProfile();
+	std::wstring tmpstring = ReadSelectedProfile(profileKey);
 
 	_lastFoundProfile = tmpstring;
-	ChangeColorProfile(_lastFoundProfile);
+	RegCloseKey(profileKey);
+}
 
+VOID DisableNightLight()
+{
+	PerformOperationOnProfileKeys(DisableNightLightInternal);
+	ChangeColorProfile(_lastFoundProfile);
 	_nightLight = false;
 }
 
@@ -431,7 +502,6 @@ int ColorProfileListenerMain()
 {
 	ProvisionDefaultProfileData();
 
-	RegOpenKeyEx(HKEY_CURRENT_USER, PROFILE_KEY_PATH, 0, KEY_ALL_ACCESS, &profileKey);
 	RegOpenKeyEx(HKEY_LOCAL_MACHINE, COLOR_AND_LIGHT_KEY_PATH, 0, KEY_ALL_ACCESS, &colorAndLightKey);
 
 	CheckForNightLight();

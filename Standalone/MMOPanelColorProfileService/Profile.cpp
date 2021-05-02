@@ -10,7 +10,7 @@ bool Profile::SetValue(HKEY hRegistryKey, const std::wstring& valueName, const s
 
 bool Profile::SetValue(HKEY hRegistryKey, const std::wstring& valueName, const DWORD data)
 {
-	return RegSetValueEx(hRegistryKey, valueName.c_str(), NULL, REG_DWORD, LPBYTE(&data), data) == ERROR_SUCCESS;
+	return RegSetValueEx(hRegistryKey, valueName.c_str(), NULL, REG_DWORD, LPBYTE(&data), sizeof(DWORD)) == ERROR_SUCCESS;
 }
 
 void Profile::ApplyProfile(HKEY const& key) const
