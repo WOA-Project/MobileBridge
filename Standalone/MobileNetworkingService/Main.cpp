@@ -135,9 +135,12 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 	rilInit.Initialize(g_ServiceStopEvent);
 	dataManagementController.Initialize(g_ServiceStopEvent);
 
-	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
+	if (g_ServiceStopEvent != NULL && g_ServiceStopEvent != INVALID_HANDLE_VALUE)
 	{
-		Sleep(1000);
+		while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
+		{
+			Sleep(1000);
+		}
 	}
 
 	audioSyncingController.DeInitialize();

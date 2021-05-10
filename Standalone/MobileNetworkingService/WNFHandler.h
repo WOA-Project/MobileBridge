@@ -105,55 +105,33 @@ typedef ULONGLONG WNF_STATE_NAME, * PWNF_STATE_NAME;
 #define WNF_CELL_WIFI_CALL_SETTINGS_CAN0 0xd8a0b2ea3beb075
 #define WNF_CELL_WIFI_CALL_SETTINGS_CAN1 0xd8a0b2ea3beb875
 
+static const GUID DefaultICan = { 0x000000a0, 0x1087, 0xff02, { 0x33, 0xff, 0xff, 0x89, 0x05, 0x11, 0x00, 0xff } };
+
+#pragma pack(1)
+typedef struct _WNF_CELL_CAN_CONFIGURATION_GLOBAL_LINE_ID
+{
+	unsigned char rgbConfiguredIccid[10];
+	unsigned char Unknown;
+	GUID ICan[2];
+} WNF_CELL_CAN_CONFIGURATION_GLOBAL_LINE_ID, * PWNF_CELL_CAN_CONFIGURATION_GLOBAL_LINE_ID;
+
 typedef struct _WNF_CELL_CAN_CONFIGURATION_TYPE
 {
-	unsigned long cbSize;
-	unsigned long dwSlotAffinity;
+	DWORD cbSize;
+	DWORD dwSlotAffinity;
 	int fVirtualRuimConfigured;
 	unsigned char rgbConfiguredIccid[10];
 	char Padding_38[2];
-	unsigned long cLinesIds;
-	unsigned char rgbLineIds[43][2];
+	DWORD cLinesIds;
+	WNF_CELL_CAN_CONFIGURATION_GLOBAL_LINE_ID rgbLineIds[2];
 	char __PADDING__[2];
 } WNF_CELL_CAN_CONFIGURATION_TYPE, * PWNF_CELL_CAN_CONFIGURATION_TYPE;
-
-typedef struct _WNF_CELL_CONFIGURED_LINES_CAN_STRUCT
-{
-	DWORD dwSize = 116;
-	DWORD dwReserved1 = 0;
-	DWORD dwReserved2 = 0;
-	BYTE ICCID1[10];
-	short shReserved1 = 0;
-	DWORD dwReserved3 = 1;
-
-	BYTE ICCID2[10];
-	short shReserved2 = 0xA005i16;
-	DWORD dwReserved4 = 0x87000000;
-
-	//
-	// These values seem unique per SIM (?)
-	// Only the ones I highlighted do change between SIMs and looks like they must
-	// be valid in order for calls to work properly in windows
-	// No idea where they come from. Change if you have problems.
-	// They are from HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Notifications\Data 0D8A0B2EA3BDF475
-	// which is actually this entire struct if you take into consideration the change counter at the very beginning (DWORD size 4)
-	//
-	BYTE bfReserved1[3] = { 16, 2, 0xFF };
-	BYTE bfReservedField1 = '3'; //diff
-	BYTE bfReserved2[3] = { 0xFF, 0xFF, 0x89 };
-	BYTE bfReservedField2 = '\5'; //diff
-	BYTE bfReservedField3 = '\21'; //diff
-	BYTE bfReserved3[63] = { 0, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-							 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-							 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-							 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-} WNF_CELL_CONFIGURED_LINES_CAN_STRUCT, * PWNF_CELL_CONFIGURED_LINES_CAN_STRUCT;
 
 class WNFHandler
 {
 public:
 	void WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID);
 	void WriteBlankConfiguredLineData(DWORD dwCan);
+	void SetConfiguredLineDataICanInConfigurableRegistry(DWORD dwCan);
 };
 

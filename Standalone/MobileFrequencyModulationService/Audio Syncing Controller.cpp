@@ -9,25 +9,35 @@ FmController Fm;
 
 float GetSystemVolume() {
 	HRESULT hr;
+	IMMDeviceEnumerator* deviceEnumerator = NULL;
+	IMMDevice* defaultDevice = NULL;
+	IAudioEndpointVolume* endpointVolume = NULL;
+	float currentVolume = 1;
 
 	hr = CoInitialize(NULL);
 
-	IMMDeviceEnumerator* deviceEnumerator = NULL;
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID*)&deviceEnumerator);
-	IMMDevice* defaultDevice = NULL;
 
-	hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
-	deviceEnumerator->Release();
-	deviceEnumerator = NULL;
+	if (deviceEnumerator != NULL)
+	{
+		hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
+		deviceEnumerator->Release();
+		deviceEnumerator = NULL;
+	}
 
-	IAudioEndpointVolume* endpointVolume = NULL;
-	hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID*)&endpointVolume);
-	defaultDevice->Release();
-	defaultDevice = NULL;
+	if (defaultDevice != NULL)
+	{
+		hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID*)&endpointVolume);
+		defaultDevice->Release();
+		defaultDevice = NULL;
+	}
 
-	float currentVolume = 0;
-	hr = endpointVolume->GetMasterVolumeLevelScalar(&currentVolume);
-	endpointVolume->Release();
+	if (endpointVolume != NULL)
+	{
+		hr = endpointVolume->GetMasterVolumeLevelScalar(&currentVolume);
+		endpointVolume->Release();
+	}
+
 	CoUninitialize();
 
 	return currentVolume;
@@ -36,25 +46,35 @@ float GetSystemVolume() {
 BOOL GetIsMuted() {
 	HRESULT hr;
 
+	IMMDeviceEnumerator* deviceEnumerator = NULL;
+	IMMDevice* defaultDevice = NULL;
+	IAudioEndpointVolume* endpointVolume = NULL;
+	BOOL currentMute = FALSE;
+
 	hr = CoInitialize(NULL);
 
-	IMMDeviceEnumerator* deviceEnumerator = NULL;
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID*)&deviceEnumerator);
-	IMMDevice* defaultDevice = NULL;
 
-	hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
-	deviceEnumerator->Release();
-	deviceEnumerator = NULL;
+	if (deviceEnumerator != NULL)
+	{
+		hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
+		deviceEnumerator->Release();
+		deviceEnumerator = NULL;
+	}
 
+	if (defaultDevice != NULL)
+	{
+		hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID*)&endpointVolume);
+		defaultDevice->Release();
+		defaultDevice = NULL;
+	}
 
-	IAudioEndpointVolume* endpointVolume = NULL;
-	hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID*)&endpointVolume);
-	defaultDevice->Release();
-	defaultDevice = NULL;
+	if (endpointVolume != NULL)
+	{
+		endpointVolume->GetMute(&currentMute);
+		endpointVolume->Release();
+	}
 
-	BOOL currentMute = FALSE;
-	endpointVolume->GetMute(&currentMute);
-	endpointVolume->Release();
 	CoUninitialize();
 
 	return currentMute;
@@ -259,10 +279,10 @@ HRESULT AudioSyncingController::Initialize()
 	BOOL currentMute = NULL;
 
 	CComPtr<IAudioEndpointVolume> endpointVolume = NULL;
-	CComPtr<IMMDevice>            defaultDevice  = NULL;
+	CComPtr<IMMDevice>            defaultDevice = NULL;
 	CVolumeOtherNotification* volumeNotification;
 
-	const auto TopologyFmInitialiseResult = Fm.Initialize();
+	const auto TopologyTelInitialiseResult = Fm.Initialize();
 
 	currentVolume = GetSystemVolume();
 	currentMute = GetIsMuted();
@@ -280,8 +300,11 @@ HRESULT AudioSyncingController::Initialize()
 
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID*)&deviceEnumerator);
 
-	endpointNotification = new CEndpointNotification();
-	hr = deviceEnumerator->RegisterEndpointNotificationCallback(endpointNotification);
+	if (deviceEnumerator != NULL)
+	{
+		endpointNotification = new CEndpointNotification();
+		hr = deviceEnumerator->RegisterEndpointNotificationCallback(endpointNotification);
+	}
 
 	//
 	// Register events in case both call and fm radio endpoint change volume without us changing it.
@@ -306,10 +329,13 @@ HRESULT AudioSyncingController::Initialize()
 
 HRESULT AudioSyncingController::DeInitialize()
 {
-	hr = deviceEnumerator->UnregisterEndpointNotificationCallback(endpointNotification);
-	endpointNotification->Release();
-	deviceEnumerator->Release();
-	deviceEnumerator = NULL;
+	if (deviceEnumerator != NULL)
+	{
+		hr = deviceEnumerator->UnregisterEndpointNotificationCallback(endpointNotification);
+		endpointNotification->Release();
+		deviceEnumerator->Release();
+		deviceEnumerator = NULL;
+	}
 
 	CoUninitialize();
 	return ERROR_SUCCESS;

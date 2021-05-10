@@ -706,13 +706,13 @@ void RestartWWANSVC()
 				{
 					Activated = true;
 				}
-				else if (pIfInfo.InterfaceStatus.InterfaceState == WwanInterfaceStateAttached && 
+				else if (pIfInfo.InterfaceStatus.InterfaceState == WwanInterfaceStateAttached &&
 					StringFromGUID2(pIfInfo.InterfaceGuid, (LPOLESTR)&GuidString, 39))
 				{
 					printf("Current state: %d\nEnabling data...\n", pIfInfo.InterfaceStatus.InterfaceState);
-						WWAN_DATA_ENABLEMENT de = { WWAN_PROFILE_SET_ALL_2, 1 };
-						dwResult = WwanSetInterface(hClient, &pIfInfo.InterfaceGuid, WwanIntfOpcodeDataEnablement, sizeof(WWAN_DATA_ENABLEMENT), &de, NULL, NULL, NULL);
-						Activated = true;
+					WWAN_DATA_ENABLEMENT de = { WWAN_PROFILE_SET_ALL_2, 1 };
+					dwResult = WwanSetInterface(hClient, &pIfInfo.InterfaceGuid, WwanIntfOpcodeDataEnablement, sizeof(WWAN_DATA_ENABLEMENT), &de, NULL, NULL, NULL);
+					Activated = true;
 				}
 				else
 				{
@@ -973,14 +973,60 @@ void mainRIL()
 	//
 }
 
+BOOL InitLoop()
+{
+	//
+	// wait until RIL is initialized
+	//
+	DWORD enabledNotifications[] = { RIL_NCLASS_FUNCRESULT, RIL_NCLASS_NOTIFICATIONS };
+	wchar_t clientName[] = L"RILClient";
+	HRIL hRil;
+	DWORD context = 20;
+
+	//
+	// Attempt to initialize RIL communication via ril proxy
+	//
+	HRESULT hr = RIL_Initialize(0, RILResultCallback, RILNotifyCallback, enabledNotifications, 2, &context, clientName, &hRil);
+	if (hr != ERROR_SUCCESS)
+	{
+		//
+		// If we failed, continue to loop
+		//
+		return FALSE;
+	}
+
+	//
+	// Deinitialize our link with ril proxy
+	// We don't need it anymore in this function
+	// NOTE: this doesn't cause MSRil to unload the ril, it just cuts communication with us
+	//
+	hr = RIL_Deinitialize(hRil);
+	if (hr != ERROR_SUCCESS)
+	{
+		std::cout << "[Function Implementation] " << "Unable to close handle" << std::endl;
+	}
+
+	//
+	// Proceed to RIL initialization
+	//
+	mainRIL();
+
+	return TRUE;
+}
+
 HRESULT RILInit::Initialize(HANDLE g_ServiceStopEvent)
 {
+	WNFHandler wnfHandler;
+
 	//
 	// First begin to check if we are on a problematic
 	// Windows version with no RIL support in WWAN-SVC
 	//
 	if (!IsBuild18912OrGreater())
 	{
+		wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(0);
+		wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(1);
+
 		// We don't need to run then
 		return ERROR_SUCCESS;
 	}
@@ -990,59 +1036,36 @@ HRESULT RILInit::Initialize(HANDLE g_ServiceStopEvent)
 	//
 	PrintBanner();
 
-	//
-	// Loop until RILAdaptation is loaded and ready
-	// In case we get told to stop by the service control, stop.
-	//
-	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
+	if (g_ServiceStopEvent != NULL && g_ServiceStopEvent != INVALID_HANDLE_VALUE)
 	{
 		//
-		// We need to give RIL a little bit of extra time, 7.5 seconds looks like the sweet spot
-		// for ril to be fully loaded in time when we get loaded by the OS
+		// Loop until RILAdaptation is loaded and ready
+		// In case we get told to stop by the service control, stop.
 		//
-		Sleep(7500);
-
-		//
-		// wait until RIL is initialized
-		//
-		DWORD enabledNotifications[] = { RIL_NCLASS_FUNCRESULT, RIL_NCLASS_NOTIFICATIONS };
-		wchar_t clientName[] = L"RILClient";
-		HRIL hRil;
-		DWORD context = 20;
-
-		//
-		// Attempt to initialize RIL communication via ril proxy
-		//
-		HRESULT hr = RIL_Initialize(0, RILResultCallback, RILNotifyCallback, enabledNotifications, 2, &context, clientName, &hRil);
-		if (hr != ERROR_SUCCESS)
+		while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
 		{
 			//
-			// If we failed, continue to loop
+			// We need to give RIL a little bit of extra time, 7.5 seconds looks like the sweet spot
+			// for ril to be fully loaded in time when we get loaded by the OS
 			//
-			continue;
+			Sleep(7500);
+
+			if (InitLoop())
+			{
+				//
+				// Break out of the loop, we're done
+				//
+				break;
+			}
 		}
-
-		//
-		// Deinitialize our link with ril proxy
-		// We don't need it anymore in this function
-		// NOTE: this doesn't cause MSRil to unload the ril, it just cuts communication with us
-		//
-		hr = RIL_Deinitialize(hRil);
-		if (hr != ERROR_SUCCESS)
-		{
-			std::cout << "[Function Implementation] " << "Unable to close handle" << std::endl;
-		}
-
-		//
-		// Proceed to RIL initialization
-		//
-		mainRIL();
-
-		//
-		// Break out of the loop, we're done
-		//
-		break;
 	}
+	else
+	{
+		InitLoop();
+	}
+
+	wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(0);
+	wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(1);
 
 	return ERROR_SUCCESS;
 }
