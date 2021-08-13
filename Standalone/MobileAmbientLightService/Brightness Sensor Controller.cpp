@@ -359,6 +359,16 @@ HRESULT BrightnessSensorController::Initialize(SERVICE_STATUS_HANDLE g_StatusHan
 			RegNotifyChangeKeyValue(autoBrightnessKey, false, REG_NOTIFY_CHANGE_LAST_SET | REG_NOTIFY_CHANGE_NAME | REG_NOTIFY_CHANGE_ATTRIBUTES | REG_NOTIFY_CHANGE_SECURITY, hEvent, true);
 		}
 	}
+	else
+	{
+		RegisterEverything(g_StatusHandle);
+
+		// Wait indefinetly
+		while (true)
+		{
+			Sleep(4294967295U);
+		}
+	}
 
 	UnregisterEverything();
 
