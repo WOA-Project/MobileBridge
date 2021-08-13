@@ -7,8 +7,11 @@ using namespace winrt;
 
 BrightnessSensorController brightnessSensorController;
 
-int _tmain(int argc, TCHAR* argv[])
+int main(int argc, TCHAR* argv[])
 {
+	UNREFERENCED_PARAMETER(argc);
+	UNREFERENCED_PARAMETER(argv);
+
 	SERVICE_TABLE_ENTRY ServiceTable[] =
 	{
 		{SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)ServiceMain},
@@ -17,6 +20,9 @@ int _tmain(int argc, TCHAR* argv[])
 
 	if (StartServiceCtrlDispatcher(ServiceTable) == FALSE)
 	{
+		// The application was ran by the user
+		// So we run our main procedure
+
 		return ServiceWorkerThread(NULL);
 	}
 
@@ -25,10 +31,12 @@ int _tmain(int argc, TCHAR* argv[])
 
 VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 {
-	DWORD Status = E_FAIL;
+	UNREFERENCED_PARAMETER(argc);
+	UNREFERENCED_PARAMETER(argv);
+
 	HANDLE hThread;
 
-	g_StatusHandle = RegisterServiceCtrlHandler(SERVICE_NAME, ServiceCtrlHandler);
+	g_StatusHandle = RegisterServiceCtrlHandlerEx(SERVICE_NAME, ServiceCtrlHandlerEx, NULL);
 
 	if (g_StatusHandle == NULL)
 	{
@@ -37,7 +45,7 @@ VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 
 	// Tell the service controller we are starting
 	ZeroMemory(&g_ServiceStatus, sizeof(g_ServiceStatus));
-	g_ServiceStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+	g_ServiceStatus.dwServiceType = SERVICE_USER_OWN_PROCESS;
 	g_ServiceStatus.dwControlsAccepted = 0;
 	g_ServiceStatus.dwCurrentState = SERVICE_START_PENDING;
 	g_ServiceStatus.dwWin32ExitCode = 0;
@@ -92,10 +100,18 @@ EXIT:
 	return;
 }
 
-
-VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode)
+DWORD WINAPI ServiceCtrlHandlerEx(
+	DWORD    dwControl,
+	DWORD    dwEventType,
+	LPVOID   lpEventData,
+	LPVOID   lpContext
+)
 {
-	switch (CtrlCode)
+	PPOWERBROADCAST_SETTING broadCastSetting = NULL;
+
+	UNREFERENCED_PARAMETER(dwEventType);
+
+	switch (dwControl)
 	{
 	case SERVICE_CONTROL_STOP:
 
@@ -116,21 +132,31 @@ VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode)
 
 		break;
 
+	case SERVICE_CONTROL_POWEREVENT:
+		broadCastSetting = (PPOWERBROADCAST_SETTING)lpEventData;
+		brightnessSensorController.OnPowerEvent(broadCastSetting->PowerSetting, broadCastSetting->Data, broadCastSetting->DataLength, lpContext);
+
+		break;
+
 	default:
 		break;
 	}
+
+	return ERROR_SUCCESS;
 }
 
 DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 {
 	init_apartment();
 
-	brightnessSensorController.Initialize();
+	brightnessSensorController.Initialize(g_StatusHandle);
 
 	while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
 	{
 		Sleep(1000);
 	}
+
+	uninit_apartment();
 
 	return ERROR_SUCCESS;
 }

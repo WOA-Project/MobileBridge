@@ -414,9 +414,6 @@ int AutoRotateMain(SERVICE_STATUS_HANDLE g_StatusHandle)
 
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WINDOWS_AUTO_ROTATION_KEY_PATH, NULL, KEY_READ, &autoRotationKey) == ERROR_SUCCESS)
 	{
-		DWORD value = 0;
-		RegSetValueEx(autoRotationKey, L"SensorPresent", NULL, REG_DWORD, (LPBYTE)&value, sizeof(DWORD));
-
 		SetupAutoRotation(g_StatusHandle);
 
 		HANDLE hEvent = CreateEvent(NULL, true, false, NULL);
