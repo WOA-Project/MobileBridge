@@ -1,8 +1,47 @@
 #include "pch.h"
 #include "AutoRotate.h"
 #include "NtAlpc.h"
+#include <powrprof.h>
+
+#define WINDOWS_AUTO_ROTATION_KEY_PATH L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AutoRotation"
 
 CRITICAL_SECTION g_AutoRotationCriticalSection;
+
+//
+// The system registry key for auto rotation
+//
+HKEY autoRotationKey = NULL;
+
+//
+// Are we already registered with the sensor?
+//
+BOOL AlreadySetup = FALSE;
+
+//
+// Is the event subscribed
+//
+BOOL Subscribed = FALSE;
+
+//
+// The event token for the orientation sensor on orientation changed event
+//
+event_token eventToken;
+
+//
+// The handle the power notify event registration
+//
+HPOWERNOTIFY m_systemSuspendHandle = NULL;
+HPOWERNOTIFY m_hScreenStateNotify = NULL;
+
+//
+// The handle to the auto rotation ALPC port
+//
+HANDLE PortHandle = NULL;
+
+//
+// Get the default simple orientation sensor on the system
+//
+SimpleOrientationSensor sensor = SimpleOrientationSensor::GetDefault();
 
 //
 // Subject: Notify auto rotation with the following current auto rotation settings
@@ -20,27 +59,14 @@ CRITICAL_SECTION g_AutoRotationCriticalSection;
 //
 // Returns: NTSTATUS
 //
-NTSTATUS NotifyAutoRotateAlpcPort(HANDLE PortHandle, INT Orientation)
+NTSTATUS NotifyAutoRotationAlpcPortOfOrientationChange(INT Orientation)
 {
-	//UCHAR RotationMessage[56];
 	ROTATION_COMMAND_MESSAGE RotationCommandMessage;
 	NTSTATUS Status;
 
 	if (PortHandle == NULL) return STATUS_INVALID_PARAMETER;
 
-//#if !defined(_M_ARM64) && !defined(_M_X64)
-//	// Only 64bit OS is currently validated
-//	return 0xC00000BB;
-//#endif
-
 	EnterCriticalSection(&g_AutoRotationCriticalSection);
-
-	/*RtlZeroMemory(&RotationMessage, sizeof(RotationMessage));
-	*(unsigned short*)&RotationMessage = 16;
-	*(unsigned short*)&RotationMessage[2] = 56;
-	*(unsigned short*)&RotationMessage[4] = 1;
-	*(unsigned int*)&RotationMessage[40] = 2;
-	*(unsigned int*)&RotationMessage[52] = Orientation;*/
 
 	RtlZeroMemory(&RotationCommandMessage, sizeof(RotationCommandMessage));
 
@@ -73,83 +99,271 @@ NTSTATUS NotifyAutoRotateAlpcPort(HANDLE PortHandle, INT Orientation)
 //
 // Returns: void
 //
-VOID ChangeDisplayOrientation(HANDLE PortHandle, INT Orientation)
+VOID ChangeDisplayOrientation(INT Orientation)
 {
-	HKEY key;
-	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AutoRotation", NULL, KEY_READ, &key) == ERROR_SUCCESS)
+	DWORD type = REG_DWORD, size = 8;
+
+	//
+	// Check if we are supposed to use the mobile behavior, if we do, then prevent the screen from rotating to Portrait (flipped)
+	//
+	if (Orientation == DMDO_90)
 	{
-		DWORD type = REG_DWORD, size = 8;
+		DWORD mobilebehavior = 0;
+		RegQueryValueEx(autoRotationKey, L"MobileBehavior", NULL, &type, (LPBYTE)&mobilebehavior, &size);
+		if (mobilebehavior == 1)
+		{
+			return;
+		}
+	}
+
+	//
+	// Check if new API is available
+	//
+	if (PortHandle != NULL)
+	{
+		NotifyAutoRotationAlpcPortOfOrientationChange(Orientation);
+	}
+	// Otherwise fallback to the old API
+	else
+	{
+		//
+		// Get the current display settings
+		//
+		DEVMODE mode;
+		EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &mode);
 
 		//
-		// Check if we are supposed to use the mobile behavior, if we do, then prevent the screen from rotating to Portrait (flipped)
+		// In order to switch from portrait to landscape and vice versa we need to swap the resolution width and height
+		// So we check for that
 		//
-		if (Orientation == DMDO_90)
+		if ((mode.dmDisplayOrientation + Orientation) % 2 == 1)
 		{
-			DWORD mobilebehavior = 0;
-			RegQueryValueEx(key, L"MobileBehavior", NULL, &type, (LPBYTE)&mobilebehavior, &size);
-			if (mobilebehavior == 1)
-			{
-				return;
-			}
+			int temp = mode.dmPelsHeight;
+			mode.dmPelsHeight = mode.dmPelsWidth;
+			mode.dmPelsWidth = temp;
 		}
 
 		//
-		// Check if rotation is enabled
+		// Change the display orientation and save to the registry the changes (1 parameter for ChangeDisplaySettings)
 		//
-		DWORD enabled = 0;
-		RegQueryValueEx(key, L"Enable", NULL, &type, (LPBYTE)&enabled, &size);
-
-		//
-		// Check if new API is available
-		//
-		if (enabled == 1 && PortHandle != NULL)
+		if (mode.dmFields | DM_DISPLAYORIENTATION)
 		{
-			NotifyAutoRotateAlpcPort(PortHandle, Orientation);
-		}
-		// Otherwise fallback to the old API
-		else if (enabled == 1)
-		{
-			//
-			// Get the current display settings
-			//
-			DEVMODE mode;
-			EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &mode);
-
-			//
-			// In order to switch from portrait to landscape and vice versa we need to swap the resolution width and height
-			// So we check for that
-			//
-			if ((mode.dmDisplayOrientation + Orientation) % 2 == 1)
-			{
-				int temp = mode.dmPelsHeight;
-				mode.dmPelsHeight = mode.dmPelsWidth;
-				mode.dmPelsWidth = temp;
-			}
-
-			//
-			// Change the display orientation and save to the registry the changes (1 parameter for ChangeDisplaySettings)
-			//
-			if (mode.dmFields | DM_DISPLAYORIENTATION)
-			{
-				mode.dmDisplayOrientation = Orientation;
-				ChangeDisplaySettingsEx(NULL, &mode, NULL, CDS_UPDATEREGISTRY | CDS_GLOBAL, NULL);
-			}
+			mode.dmDisplayOrientation = Orientation;
+			ChangeDisplaySettingsEx(NULL, &mode, NULL, CDS_UPDATEREGISTRY | CDS_GLOBAL, NULL);
 		}
 	}
 }
 
-int AutoRotateMain()
+VOID OnSimpleOrientationSensorOrientationChanged(IInspectable const& /*sender*/, SimpleOrientationSensorOrientationChangedEventArgs const& args)
+{
+	switch (args.Orientation())
+	{
+		// Portrait
+	case SimpleOrientation::NotRotated:
+	{
+		ChangeDisplayOrientation(DMDO_270);
+		break;
+	}
+	// Portrait (flipped)
+	case SimpleOrientation::Rotated180DegreesCounterclockwise:
+	{
+		ChangeDisplayOrientation(DMDO_90);
+		break;
+	}
+	// Landscape
+	case SimpleOrientation::Rotated90DegreesCounterclockwise:
+	{
+		ChangeDisplayOrientation(DMDO_180);
+		break;
+	}
+	// Landscape (flipped)
+	case SimpleOrientation::Rotated270DegreesCounterclockwise:
+	{
+		ChangeDisplayOrientation(DMDO_DEFAULT);
+		break;
+	}
+	}
+}
+
+VOID OnPowerEvent(
+	_In_ GUID SettingGuid,
+	_In_ PVOID Value,
+	_In_ ULONG ValueLength,
+	_Inout_opt_ PVOID Context
+)
+{
+	UNREFERENCED_PARAMETER(Context);
+
+	if (IsEqualGUID(GUID_CONSOLE_DISPLAY_STATE, SettingGuid))
+	{
+		if (ValueLength != sizeof(DWORD))
+		{
+			return;
+		}
+
+		DWORD DisplayState = *(DWORD*)Value;
+
+		switch (DisplayState)
+		{
+		case 0:
+			// Display Off
+
+			//
+			// Unsubscribe to sensor events
+			//
+			if (Subscribed)
+			{
+				sensor.OrientationChanged(eventToken);
+				Subscribed = FALSE;
+			}
+			break;
+		case 1:
+			// Display On
+
+			//
+			// Subscribe to sensor events
+			//
+			if (!Subscribed)
+			{
+				eventToken = sensor.OrientationChanged(OnSimpleOrientationSensorOrientationChanged);
+				Subscribed = TRUE;
+			}
+			break;
+		case 2:
+			// Display Dimmed
+
+			break;
+		default:
+			// Unknown
+			break;
+		}
+	}
+}
+
+VOID OnSystemSuspendStatusChanged(ULONG PowerEvent)
+{
+	if (PowerEvent == PBT_APMSUSPEND)
+	{
+		// Entering
+
+		//
+		// Unsubscribe to sensor events
+		//
+		if (Subscribed)
+		{
+			sensor.OrientationChanged(eventToken);
+			Subscribed = FALSE;
+		}
+	}
+	else if (PowerEvent == PBT_APMRESUMEAUTOMATIC || PowerEvent == PBT_APMRESUMESUSPEND)
+	{
+		// AutoResume
+		// ManualResume
+
+		//
+		// Subscribe to sensor events
+		//
+		if (!Subscribed)
+		{
+			eventToken = sensor.OrientationChanged(OnSimpleOrientationSensorOrientationChanged);
+			Subscribed = TRUE;
+		}
+	}
+}
+
+// Using PVOID as per the actual typedef
+ULONG CALLBACK SuspendResumeCallback(PVOID context, ULONG powerEvent, PVOID setting)
+{
+	UNREFERENCED_PARAMETER(context);
+	UNREFERENCED_PARAMETER(setting);
+	OnSystemSuspendStatusChanged(powerEvent);
+	return ERROR_SUCCESS;
+}
+
+VOID UnregisterEverything()
+{
+	if (m_systemSuspendHandle != NULL)
+	{
+		PowerUnregisterSuspendResumeNotification(m_systemSuspendHandle);
+		m_systemSuspendHandle = NULL;
+	}
+
+	if (m_hScreenStateNotify != NULL)
+	{
+		UnregisterPowerSettingNotification(m_hScreenStateNotify);
+		m_hScreenStateNotify = NULL;
+	}
+
+	//
+	// Unsubscribe to sensor events
+	//
+	if (Subscribed)
+	{
+		sensor.OrientationChanged(eventToken);
+		Subscribed = FALSE;
+	}
+
+	AlreadySetup = FALSE;
+}
+
+VOID RegisterEverything(SERVICE_STATUS_HANDLE g_StatusHandle)
+{
+	DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS powerParams{};
+	powerParams.Callback = SuspendResumeCallback;
+
+	PowerRegisterSuspendResumeNotification(
+		DEVICE_NOTIFY_CALLBACK,
+		&powerParams,
+		&m_systemSuspendHandle
+	);
+
+	if (g_StatusHandle != NULL)
+	{
+		m_hScreenStateNotify = RegisterPowerSettingNotification(
+			g_StatusHandle,
+			&GUID_CONSOLE_DISPLAY_STATE,
+			DEVICE_NOTIFY_SERVICE_HANDLE
+		);
+	}
+
+	//
+	// Subscribe to sensor events
+	//
+	if (!Subscribed)
+	{
+		eventToken = sensor.OrientationChanged(OnSimpleOrientationSensorOrientationChanged);
+		Subscribed = TRUE;
+	}
+
+	AlreadySetup = TRUE;
+}
+
+VOID SetupAutoRotation(SERVICE_STATUS_HANDLE g_StatusHandle)
+{
+	DWORD type = REG_DWORD, size = 8;
+
+	//
+	// Check if rotation is enabled
+	//
+	DWORD enabled = 0;
+	RegQueryValueEx(autoRotationKey, L"Enable", NULL, &type, (LPBYTE)&enabled, &size);
+
+	if (enabled == 1 && AlreadySetup == FALSE)
+	{
+		RegisterEverything(g_StatusHandle);
+	}
+	else if (enabled == 0 && AlreadySetup == TRUE)
+	{
+		UnregisterEverything();
+	}
+}
+
+int AutoRotateMain(SERVICE_STATUS_HANDLE g_StatusHandle)
 {
 	NTSTATUS Status;
 	UNICODE_STRING DestinationString;
-	HANDLE PortHandle = NULL;
 	OBJECT_ATTRIBUTES ObjectAttribs;
 	ALPC_PORT_ATTRIBUTES PortAttribs = { 0 };
-
-	//
-	// Get the default simple orientation sensor on the system
-	//
-	SimpleOrientationSensor sensor = SimpleOrientationSensor::GetDefault();
 
 	//
 	// If no sensor is found return 1
@@ -169,10 +383,13 @@ int AutoRotateMain()
 	PortAttribs.MaxMessageLength = 56;
 
 	RtlInitUnicodeString(&DestinationString, L"\\RPC Control\\AutoRotationApiPort");
+
 #pragma warning(disable:6387)
 	Status = NtAlpcConnectPort(&PortHandle, &DestinationString, &ObjectAttribs, &PortAttribs, ALPC_MSGFLG_SYNC_REQUEST, NULL, NULL, NULL, NULL, NULL, NULL);
 #pragma warning(default:6387)
-	if (NT_SUCCESS(Status)) {
+
+	if (NT_SUCCESS(Status))
+	{
 		// Initialize the critical section one time only.
 		if (!InitializeCriticalSectionAndSpinCount(&g_AutoRotationCriticalSection, 0x00000400))
 		{
@@ -180,7 +397,8 @@ int AutoRotateMain()
 			PortHandle = NULL;
 		}
 	}
-	else {
+	else
+	{
 		// Reset it anyway
 		PortHandle = NULL;
 	}
@@ -194,45 +412,31 @@ int AutoRotateMain()
 		RegSetValueEx(key, L"SensorPresent", NULL, REG_DWORD, (LPBYTE)1, 8);
 	}
 
-	//
-	// Subscribe to sensor events
-	//
-	sensor.OrientationChanged([PortHandle](IInspectable const& /*sender*/, SimpleOrientationSensorOrientationChangedEventArgs const& args)
-		{
-			switch (args.Orientation())
-			{
-			// Portrait
-			case SimpleOrientation::NotRotated:
-			{
-				ChangeDisplayOrientation(PortHandle, DMDO_270);
-				break;
-			}
-			// Portrait (flipped)
-			case SimpleOrientation::Rotated180DegreesCounterclockwise:
-			{
-				ChangeDisplayOrientation(PortHandle, DMDO_90);
-				break;
-			}
-			// Landscape
-			case SimpleOrientation::Rotated90DegreesCounterclockwise:
-			{
-				ChangeDisplayOrientation(PortHandle, DMDO_180);
-				break;
-			}
-			// Landscape (flipped)
-			case SimpleOrientation::Rotated270DegreesCounterclockwise:
-			{
-				ChangeDisplayOrientation(PortHandle, DMDO_DEFAULT);
-				break;
-			}
-			}
-		});
-
-	// Wait indefinetly
-	while (true)
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, WINDOWS_AUTO_ROTATION_KEY_PATH, NULL, KEY_READ, &autoRotationKey) == ERROR_SUCCESS)
 	{
-		Sleep(4294967295U);
+		DWORD value = 0;
+		RegSetValueEx(autoRotationKey, L"SensorPresent", NULL, REG_DWORD, (LPBYTE)&value, sizeof(DWORD));
+
+		SetupAutoRotation(g_StatusHandle);
+
+		HANDLE hEvent = CreateEvent(NULL, true, false, NULL);
+
+		RegNotifyChangeKeyValue(autoRotationKey, true, REG_NOTIFY_CHANGE_LAST_SET, hEvent, true);
+
+		while (true)
+		{
+			if (WaitForSingleObject(hEvent, INFINITE) == WAIT_FAILED)
+			{
+				break;
+			}
+
+			SetupAutoRotation(g_StatusHandle);
+
+			RegNotifyChangeKeyValue(autoRotationKey, false, REG_NOTIFY_CHANGE_LAST_SET | REG_NOTIFY_CHANGE_NAME | REG_NOTIFY_CHANGE_ATTRIBUTES | REG_NOTIFY_CHANGE_SECURITY, hEvent, true);
+		}
 	}
+
+	UnregisterEverything();
 
 	// Close handle for the future
 	// Even the thread doesn't support exit right now
