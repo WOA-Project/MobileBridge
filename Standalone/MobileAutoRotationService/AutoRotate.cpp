@@ -158,7 +158,7 @@ VOID OnSimpleOrientationSensorOrientationChanged(IInspectable const& /*sender*/,
 {
 	switch (args.Orientation())
 	{
-		// Portrait
+	// Portrait
 	case SimpleOrientation::NotRotated:
 	{
 		ChangeDisplayOrientation(DMDO_270);
