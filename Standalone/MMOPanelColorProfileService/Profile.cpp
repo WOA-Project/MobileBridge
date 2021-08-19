@@ -36,8 +36,9 @@ void Profile::ApplyProfile(HKEY const& key) const
 
 	DWORD dwData = 0;
 	DWORD cbData = sizeof(DWORD);
+	DWORD valueType = REG_DWORD;
 
-	long err = RegQueryValueEx(key, L"UserSettingAtomicUpdate", 0, 0, LPBYTE(&dwData), &cbData);
+	long err = RegQueryValueEx(key, L"UserSettingAtomicUpdate", 0, &valueType, LPBYTE(&dwData), &cbData);
 
 	if (err == ERROR_SUCCESS)
 	{

@@ -21,59 +21,74 @@ extern "C"
 		_Inout_ PULONG BufferSize);
 }
 
-GUID StringToGuid(const wchar_t* str)
+GUID* StringToGuid(const wchar_t* str)
 {
-	GUID guid;
-	int ret = swscanf_s(str,
-		L"{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
-		&guid.Data1, &guid.Data2, &guid.Data3,
-		&guid.Data4[0], &guid.Data4[1], &guid.Data4[2], &guid.Data4[3],
-		&guid.Data4[4], &guid.Data4[5], &guid.Data4[6], &guid.Data4[7]);
+	GUID* guid = (GUID*)malloc(sizeof(GUID));
+	if (guid != NULL)
+	{
+		int ret = swscanf_s(str,
+			L"{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
+			&guid->Data1, &guid->Data2, &guid->Data3,
+			&guid->Data4[0], &guid->Data4[1], &guid->Data4[2], &guid->Data4[3],
+			&guid->Data4[4], &guid->Data4[5], &guid->Data4[6], &guid->Data4[7]);
+	}
 
 	return guid;
 }
 
-wchar_t guid_cstr[39];
-
 wchar_t* GuidToString(GUID guid)
 {
-	swprintf_s(guid_cstr, sizeof(guid_cstr),
-		L"{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-		guid.Data1, guid.Data2, guid.Data3,
-		guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
-		guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+	wchar_t* str = (wchar_t*)malloc(sizeof(wchar_t) * 39);
 
-	return guid_cstr;
+	if (str != NULL)
+	{
+		swprintf_s(str, sizeof(39),
+			L"{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+			guid.Data1, guid.Data2, guid.Data3,
+			guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+			guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+	}
+
+	return str;
 }
 
-GUID GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
+GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 {
 	HKEY hKey;
 	LSTATUS nResult = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\OEM\\RILINITSVC", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
+	
+	wchar_t* ICanStr = (wchar_t*)malloc(sizeof(wchar_t) * 39);
+	if (ICanStr == NULL)
+	{
+		return NULL;
+	}
 
-	const wchar_t* ICanStr = L"{000000A0-1087-FF02-33FF-FF89051100FF}";
+	RtlCopyMemory(ICanStr, L"{000000A0-1087-FF02-33FF-FF89051100FF}", 39);
 	DWORD cbData = sizeof(ICanStr);
 
 	bool Logging = FALSE;
 
 	if (nResult == ERROR_SUCCESS)
 	{
+		DWORD valType = REG_SZ;
 		if (dwCan == 1)
 		{
-			nResult = ::RegQueryValueEx(hKey, L"ICan1", NULL, NULL, (LPBYTE)ICanStr, &cbData);
+			nResult = ::RegQueryValueEx(hKey, L"ICan1", NULL, &valType, (LPBYTE)ICanStr, &cbData);
 		}
 		else
 		{
-			nResult = ::RegQueryValueEx(hKey, L"ICan0", NULL, NULL, (LPBYTE)ICanStr, &cbData);
+			nResult = ::RegQueryValueEx(hKey, L"ICan0", NULL, &valType, (LPBYTE)ICanStr, &cbData);
 		}
 
 		if (nResult != ERROR_SUCCESS)
-			ICanStr = L"{000000A0-1087-FF02-33FF-FF89051100FF}";
+			RtlCopyMemory(ICanStr, L"{000000A0-1087-FF02-33FF-FF89051100FF}", 39);
 
 		RegCloseKey(hKey);
 	}
 
-	return StringToGuid(ICanStr);
+	GUID* guid = StringToGuid(ICanStr);
+	free(ICanStr);
+	return guid;
 }
 
 void WNFHandler::SetConfiguredLineDataICanInConfigurableRegistry(DWORD dwCan)
@@ -108,13 +123,20 @@ void WNFHandler::SetConfiguredLineDataICanInConfigurableRegistry(DWORD dwCan)
 			{
 				Utilities::RegSetValueAndCreateKeyIfNeeded(L"SOFTWARE\\OEM\\RILINITSVC", L"ICan0", ConfiguredLineStr);
 			}
+
+			free(ConfiguredLineStr);
 		}
 	}
 }
 
 void WNFHandler::WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID)
 {
-	GUID ConfiguredICan = GetICanGUIDFromConfigurableRegistry(dwCan);
+	GUID* ConfiguredICan = GetICanGUIDFromConfigurableRegistry(dwCan);
+	if (ConfiguredICan == NULL)
+	{
+		std::cout << "Failed to write WNF line registration information for phone service using NtUpdateWnfStateData. ConfiguredICan was NULL" << std::endl;
+		return;
+	}
 
 	WNF_CELL_CAN_CONFIGURATION_TYPE ConfigurationType = { 0 };
 	RtlZeroMemory(&ConfigurationType, sizeof(WNF_CELL_CAN_CONFIGURATION_TYPE));
@@ -126,7 +148,7 @@ void WNFHandler::WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID)
 	ConfigurationType.cLinesIds = 1;
 	memcpy(ConfigurationType.rgbLineIds[0].rgbConfiguredIccid, ICCID, 10);
 	ConfigurationType.rgbLineIds[0].Unknown = 0x05;
-	memcpy(&ConfigurationType.rgbLineIds[0].ICan[0], &ConfiguredICan, sizeof(GUID));
+	memcpy(&ConfigurationType.rgbLineIds[0].ICan[0], ConfiguredICan, sizeof(GUID));
 
 	WNF_STATE_NAME stateName = WNF_CELL_CONFIGURED_LINES_CAN0;
 	if (dwCan == 1)
@@ -140,6 +162,8 @@ void WNFHandler::WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID)
 	{
 		std::cout << "Failed to write WNF line registration information for phone service using NtUpdateWnfStateData. hResult=" << std::hex << nError << std::endl;
 	}
+
+	free(ConfiguredICan);
 }
 
 void WNFHandler::WriteBlankConfiguredLineData(DWORD dwCan)

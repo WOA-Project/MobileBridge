@@ -811,13 +811,14 @@ void mainRIL()
 	LSTATUS nResult = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\OEM\\RILINITSVC", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
 
 	DWORD dwData;
+	DWORD valueType = REG_DWORD;
 	DWORD cbData = sizeof(DWORD);
 
 	bool Logging = FALSE;
 
 	if (nResult == ERROR_SUCCESS)
 	{
-		nResult = ::RegQueryValueEx(hKey, L"DisableCallReg", NULL, NULL, (LPBYTE)&dwData, &cbData);
+		nResult = ::RegQueryValueEx(hKey, L"DisableCallReg", NULL, &valueType, (LPBYTE)&dwData, &cbData);
 
 		if (nResult == ERROR_SUCCESS)
 			if (dwData == 1)

@@ -40,7 +40,7 @@ std::wstring ReadSelectedProfile(HKEY profileKey)
 	{
 		std::vector<WCHAR> temp(size / sizeof(WCHAR));
 
-		nError = RegQueryValueExW(profileKey, L"ICMProfile", NULL, NULL, reinterpret_cast<LPBYTE>(&temp[0]), &size);
+		nError = RegQueryValueExW(profileKey, L"ICMProfile", NULL, &type, reinterpret_cast<LPBYTE>(&temp[0]), &size);
 		if (nError != ERROR_SUCCESS)
 		{
 			return L"";
@@ -355,22 +355,23 @@ VOID ChangeColorProfile(std::wstring lastprofile)
 
 		unsigned long dwData = 0;
 		unsigned long cbData = sizeof(unsigned long);
+		unsigned long valueType = REG_DWORD;
 
-		long err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedSaturation", 0, 0, LPBYTE(&dwData), &cbData);
+		long err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedSaturation", 0, &valueType, LPBYTE(&dwData), &cbData);
 
 		if (err == ERROR_SUCCESS)
 			saturation = dwData;
 		else
 			saturation = 25;
 
-		err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedTint", 0, 0, LPBYTE(&dwData), &cbData);
+		err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedTint", 0, &valueType, LPBYTE(&dwData), &cbData);
 
 		if (err == ERROR_SUCCESS)
 			tint = dwData;
 		else
 			tint = 50;
 
-		err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedTemperature", 0, 0, LPBYTE(&dwData), &cbData);
+		err = RegQueryValueEx(colorAndLightKey, L"UserSettingAdvancedTemperature", 0, &valueType, LPBYTE(&dwData), &cbData);
 
 		if (err == ERROR_SUCCESS)
 			temp = dwData;
