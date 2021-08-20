@@ -42,7 +42,7 @@ wchar_t* GuidToString(GUID guid)
 
 	if (str != NULL)
 	{
-		swprintf_s(str, sizeof(39),
+		swprintf_s(str, sizeof(wchar_t) * 39,
 			L"{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
 			guid.Data1, guid.Data2, guid.Data3,
 			guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
