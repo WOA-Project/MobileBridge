@@ -1,6 +1,7 @@
 #include "Audio Syncing Controller.h"
 #include "Topology Telephony Controller.h"
 #include <endpointvolume.h>
+#include <iostream>
 
 HRESULT hr;
 IMMDeviceEnumerator* deviceEnumerator = NULL;
@@ -282,47 +283,65 @@ HRESULT AudioSyncingController::Initialize()
 	CComPtr<IMMDevice>            defaultDevice  = NULL;
 	CVolumeOtherNotification*     volumeNotification;
 
+	std::cout << "AudioSyncingController::Initialize -> Telephony.Initialize" << std::endl;
 	const auto TopologyTelInitialiseResult = Telephony.Initialize();
 
+	std::cout << "AudioSyncingController::Initialize -> GetSystemVolume" << std::endl;
 	currentVolume = GetSystemVolume();
+	std::cout << "AudioSyncingController::Initialize -> GetIsMuted" << std::endl;
 	currentMute = GetIsMuted();
 
 	if (currentMute)
 	{
+		std::cout << "AudioSyncingController::Initialize -> SetTelephonyVolume(0)" << std::endl;
 		Telephony.SetTelephonyVolume(0);
 	}
 	else
 	{
+		std::cout << "AudioSyncingController::Initialize -> SetTelephonyVolume" << std::endl;
 		Telephony.SetTelephonyVolume(currentVolume);
 	}
 
+	std::cout << "AudioSyncingController::Initialize -> CoInitialize" << std::endl;
 	hr = CoInitialize(NULL);
 
+	std::cout << "AudioSyncingController::Initialize -> CoCreateInstance" << std::endl;
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID*)&deviceEnumerator);
 
 	if (deviceEnumerator != NULL)
 	{
+		std::cout << "AudioSyncingController::Initialize -> CEndpointNotification" << std::endl;
 		endpointNotification = new CEndpointNotification();
+		std::cout << "AudioSyncingController::Initialize -> RegisterEndpointNotificationCallback" << std::endl;
 		hr = deviceEnumerator->RegisterEndpointNotificationCallback(endpointNotification);
 	}
 
 	//
 	// Register events in case both call and fm radio endpoint change volume without us changing it.
 	//
+	std::cout << "AudioSyncingController::Initialize -> CVolumeOtherNotification" << std::endl;
 	volumeNotification = new CVolumeOtherNotification();
 
+	std::cout << "AudioSyncingController::Initialize -> GetMMDevice" << std::endl;
 	defaultDevice = Telephony.GetMMDevice();
-	hr = defaultDevice->Activate(
-		__uuidof(IAudioEndpointVolume), 
-		CLSCTX_ALL,
-		NULL, 
-		(VOID**)&endpointVolume);
 
-	if (SUCCEEDED(hr))
+	if (defaultDevice != NULL)
 	{
-		hr = endpointVolume->RegisterControlChangeNotify(volumeNotification);
+		std::cout << "AudioSyncingController::Initialize -> Activate" << std::endl;
+		hr = defaultDevice->Activate(
+			__uuidof(IAudioEndpointVolume),
+			CLSCTX_ALL,
+			NULL,
+			(VOID**)&endpointVolume);
+
+		if (SUCCEEDED(hr))
+		{
+			std::cout << "AudioSyncingController::Initialize -> RegisterControlChangeNotify" << std::endl;
+			hr = endpointVolume->RegisterControlChangeNotify(volumeNotification);
+		}
+
+		defaultDevice = NULL;
 	}
-	defaultDevice = NULL;
 
 	return ERROR_SUCCESS;
 }

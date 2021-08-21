@@ -4,6 +4,7 @@
 #include "Data Management Controller.h"
 #include "RILInit.h"
 #include "Utilities.h"
+#include <iostream>
 
 AudioSyncingController audioSyncingController;
 DataManagementController dataManagementController;
@@ -19,6 +20,7 @@ int _tmain(int argc, TCHAR* argv[])
 
 	if (StartServiceCtrlDispatcher(ServiceTable) == FALSE)
 	{
+		std::cout << "_tmain -> ServiceWorkerThread" << std::endl;
 		//return GetLastError();
 		// The application was ran by the user
 		// So we run our main procedure
@@ -131,10 +133,14 @@ VOID WINAPI ServiceCtrlHandler(DWORD CtrlCode)
 
 DWORD WINAPI ServiceWorkerThread(LPVOID lpParam)
 {
+	std::cout << "ServiceWorkerThread -> audioSyncingController.Initialize" << std::endl;
 	audioSyncingController.Initialize();
+	std::cout << "ServiceWorkerThread -> rilInit.Initialize" << std::endl;
 	rilInit.Initialize(g_ServiceStopEvent);
+	std::cout << "ServiceWorkerThread -> dataManagementController.Initialize" << std::endl;
 	dataManagementController.Initialize(g_ServiceStopEvent);
 
+	std::cout << "ServiceWorkerThread -> prepare to wait" << std::endl;
 	if (g_ServiceStopEvent != NULL && g_ServiceStopEvent != INVALID_HANDLE_VALUE)
 	{
 		while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)

@@ -23,6 +23,8 @@ extern "C"
 
 GUID* StringToGuid(const wchar_t* str)
 {
+	std::cout << "--> StringToGuid" << std::endl;
+
 	GUID* guid = (GUID*)malloc(sizeof(GUID));
 	if (guid != NULL)
 	{
@@ -33,11 +35,14 @@ GUID* StringToGuid(const wchar_t* str)
 			&guid->Data4[4], &guid->Data4[5], &guid->Data4[6], &guid->Data4[7]);
 	}
 
+	std::cout << "<-- StringToGuid" << std::endl;
 	return guid;
 }
 
 wchar_t* GuidToString(GUID guid)
 {
+	std::cout << "--> GuidToString" << std::endl;
+
 	wchar_t* str = (wchar_t*)malloc(sizeof(wchar_t) * 39);
 
 	if (str != NULL)
@@ -49,17 +54,21 @@ wchar_t* GuidToString(GUID guid)
 			guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
 	}
 
+	std::cout << "<-- GuidToString" << std::endl;
 	return str;
 }
 
 GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 {
+	std::cout << "--> GetICanGUIDFromConfigurableRegistry" << std::endl;
+
 	HKEY hKey;
 	LSTATUS nResult = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\OEM\\RILINITSVC", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
 	
 	wchar_t* ICanStr = (wchar_t*)malloc(sizeof(wchar_t) * 39);
 	if (ICanStr == NULL)
 	{
+		std::cout << "<-- GetICanGUIDFromConfigurableRegistry" << std::endl;
 		return NULL;
 	}
 
@@ -88,11 +97,15 @@ GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 
 	GUID* guid = StringToGuid(ICanStr);
 	free(ICanStr);
+
+	std::cout << "<-- GetICanGUIDFromConfigurableRegistry" << std::endl;
 	return guid;
 }
 
 void WNFHandler::SetConfiguredLineDataICanInConfigurableRegistry(DWORD dwCan)
 {
+	std::cout << "--> SetConfiguredLineDataICanInConfigurableRegistry" << std::endl;
+
 	WNF_CELL_CAN_CONFIGURATION_TYPE ConfigurationType = { 0 };
 	DWORD cbSize = sizeof(WNF_CELL_CAN_CONFIGURATION_TYPE);
 	RtlZeroMemory(&ConfigurationType, cbSize);
@@ -127,14 +140,20 @@ void WNFHandler::SetConfiguredLineDataICanInConfigurableRegistry(DWORD dwCan)
 			free(ConfiguredLineStr);
 		}
 	}
+
+	std::cout << "<-- SetConfiguredLineDataICanInConfigurableRegistry" << std::endl;
 }
 
 void WNFHandler::WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID)
 {
+	std::cout << "--> WriteConfiguredLineData" << std::endl;
+
 	GUID* ConfiguredICan = GetICanGUIDFromConfigurableRegistry(dwCan);
 	if (ConfiguredICan == NULL)
 	{
 		std::cout << "Failed to write WNF line registration information for phone service using NtUpdateWnfStateData. ConfiguredICan was NULL" << std::endl;
+
+		std::cout << "<-- WriteConfiguredLineData" << std::endl;
 		return;
 	}
 
@@ -164,10 +183,14 @@ void WNFHandler::WriteConfiguredLineData(DWORD dwCan, BYTE* ICCID)
 	}
 
 	free(ConfiguredICan);
+
+	std::cout << "<-- WriteConfiguredLineData" << std::endl;
 }
 
 void WNFHandler::WriteBlankConfiguredLineData(DWORD dwCan)
 {
+	std::cout << "--> WriteBlankConfiguredLineData" << std::endl;
+
 	WNF_CELL_CAN_CONFIGURATION_TYPE ConfigurationType = { 0 };
 	RtlZeroMemory(&ConfigurationType, sizeof(WNF_CELL_CAN_CONFIGURATION_TYPE));
 
@@ -186,4 +209,6 @@ void WNFHandler::WriteBlankConfiguredLineData(DWORD dwCan)
 	{
 		std::cout << "Failed to write WNF line registration information for phone service using NtUpdateWnfStateData. hResult=" << std::hex << nError << std::endl;
 	}
+
+	std::cout << "<-- WriteBlankConfiguredLineData" << std::endl;
 }

@@ -953,8 +953,8 @@ void mainRIL()
 			{
 				if (!DisableCallReg)
 				{
-					std::cout << "Attempting to write WNF registration information for phone service." << std::endl;
-					wnfHandler.WriteBlankConfiguredLineData(i);
+					//std::cout << "Attempting to write WNF registration information for phone service." << std::endl;
+					//wnfHandler.WriteBlankConfiguredLineData(i);
 				}
 			}
 		}
@@ -1053,6 +1053,9 @@ HRESULT RILInit::Initialize(HANDLE g_ServiceStopEvent)
 
 			if (InitLoop())
 			{
+				//wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(0);
+				//wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(1);
+
 				//
 				// Break out of the loop, we're done
 				//
@@ -1063,10 +1066,10 @@ HRESULT RILInit::Initialize(HANDLE g_ServiceStopEvent)
 	else
 	{
 		InitLoop();
-	}
 
-	wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(0);
-	wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(1);
+		//wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(0);
+		//wnfHandler.SetConfiguredLineDataICanInConfigurableRegistry(1);
+	}
 
 	return ERROR_SUCCESS;
 }
