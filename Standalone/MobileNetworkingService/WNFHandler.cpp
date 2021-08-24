@@ -21,59 +21,73 @@ extern "C"
 		_Inout_ PULONG BufferSize);
 }
 
-GUID* StringToGuid(const wchar_t* str)
-{
-	std::cout << "--> StringToGuid" << std::endl;
+#define GUID_STRING_LENGTH 39
+#define DEFAULT_GUID_STRING TEXT("{000000A0-1087-FF02-33FF-FF89051100FF}")
 
+GUID* StringToGuid(TCHAR* str)
+{
 	GUID* guid = (GUID*)malloc(sizeof(GUID));
 	if (guid != NULL)
 	{
+#ifdef UNICODE
 		int ret = swscanf_s(str,
-			L"{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
+			TEXT("{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}"),
 			&guid->Data1, &guid->Data2, &guid->Data3,
 			&guid->Data4[0], &guid->Data4[1], &guid->Data4[2], &guid->Data4[3],
 			&guid->Data4[4], &guid->Data4[5], &guid->Data4[6], &guid->Data4[7]);
+#else
+		int ret = sscanf_s(str,
+			TEXT("{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}"),
+			&guid->Data1, &guid->Data2, &guid->Data3,
+			&guid->Data4[0], &guid->Data4[1], &guid->Data4[2], &guid->Data4[3],
+			&guid->Data4[4], &guid->Data4[5], &guid->Data4[6], &guid->Data4[7]);
+#endif
 	}
 
-	std::cout << "<-- StringToGuid" << std::endl;
 	return guid;
 }
 
-wchar_t* GuidToString(GUID guid)
+TCHAR* GuidToString(GUID guid)
 {
-	std::cout << "--> GuidToString" << std::endl;
+	DWORD cbData = sizeof(TCHAR) * GUID_STRING_LENGTH;
+	TCHAR* ICanStr = (TCHAR*)malloc(cbData + 1);
+	RtlZeroMemory(ICanStr, cbData + 1);
 
-	wchar_t* str = (wchar_t*)malloc(sizeof(wchar_t) * 39);
-
-	if (str != NULL)
+	if (ICanStr != NULL)
 	{
-		swprintf_s(str, sizeof(wchar_t) * 39,
-			L"{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+#ifdef UNICODE
+		swprintf_s(ICanStr, GUID_STRING_LENGTH,
+			TEXT("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"),
 			guid.Data1, guid.Data2, guid.Data3,
 			guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
 			guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+#else
+		sprintf_s(ICanStr, GUID_STRING_LENGTH,
+			TEXT("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"),
+			guid.Data1, guid.Data2, guid.Data3,
+			guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+			guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+#endif
 	}
 
-	std::cout << "<-- GuidToString" << std::endl;
-	return str;
+	return ICanStr;
 }
 
 GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 {
-	std::cout << "--> GetICanGUIDFromConfigurableRegistry" << std::endl;
-
 	HKEY hKey;
-	LSTATUS nResult = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\OEM\\RILINITSVC", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
-	
-	wchar_t* ICanStr = (wchar_t*)malloc(sizeof(wchar_t) * 39);
+	LSTATUS nResult = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\OEM\\RILINITSVC"), 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
+
+	DWORD cbData = sizeof(TCHAR) * GUID_STRING_LENGTH;
+	TCHAR* ICanStr = (TCHAR*)malloc(cbData + 1);
+	RtlZeroMemory(ICanStr, cbData + 1);
+
 	if (ICanStr == NULL)
 	{
-		std::cout << "<-- GetICanGUIDFromConfigurableRegistry" << std::endl;
 		return NULL;
 	}
 
-	RtlCopyMemory(ICanStr, L"{000000A0-1087-FF02-33FF-FF89051100FF}", 39);
-	DWORD cbData = sizeof(ICanStr);
+	RtlCopyMemory(ICanStr, DEFAULT_GUID_STRING, cbData);
 
 	bool Logging = FALSE;
 
@@ -82,15 +96,18 @@ GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 		DWORD valType = REG_SZ;
 		if (dwCan == 1)
 		{
-			nResult = ::RegQueryValueEx(hKey, L"ICan1", NULL, &valType, (LPBYTE)ICanStr, &cbData);
+			nResult = ::RegQueryValueEx(hKey, TEXT("ICan1"), NULL, &valType, (LPBYTE)ICanStr, &cbData);
 		}
 		else
 		{
-			nResult = ::RegQueryValueEx(hKey, L"ICan0", NULL, &valType, (LPBYTE)ICanStr, &cbData);
+			nResult = ::RegQueryValueEx(hKey, TEXT("ICan0"), NULL, &valType, (LPBYTE)ICanStr, &cbData);
 		}
 
-		if (nResult != ERROR_SUCCESS)
-			RtlCopyMemory(ICanStr, L"{000000A0-1087-FF02-33FF-FF89051100FF}", 39);
+		if (nResult != ERROR_SUCCESS || cbData != sizeof(TCHAR) * GUID_STRING_LENGTH)
+		{
+			cbData = sizeof(TCHAR) * GUID_STRING_LENGTH;
+			RtlCopyMemory(ICanStr, DEFAULT_GUID_STRING, cbData);
+		}
 
 		RegCloseKey(hKey);
 	}
@@ -98,7 +115,6 @@ GUID* GetICanGUIDFromConfigurableRegistry(DWORD dwCan)
 	GUID* guid = StringToGuid(ICanStr);
 	free(ICanStr);
 
-	std::cout << "<-- GetICanGUIDFromConfigurableRegistry" << std::endl;
 	return guid;
 }
 
