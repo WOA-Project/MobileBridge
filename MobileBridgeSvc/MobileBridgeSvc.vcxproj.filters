@@ -43,9 +43,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="MobileBridgeSvc.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>

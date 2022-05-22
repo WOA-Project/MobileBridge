@@ -137,8 +137,18 @@ NTSTATUS NTAPI WnfCallback(ULONGLONG p1, PVOID p2, PVOID p3, PVOID p4, PVOID p5,
 
 		if (controller != NULL)
 		{
-			TimeSpan span(time);
-			controller.SendHapticFeedbackForDuration(controllerFeedback, ((double)intensity / (double)100), span);
+			try {
+				TimeSpan span(time);
+				controller.SendHapticFeedbackForDuration(controllerFeedback, ((double)intensity / (double)100), span);
+			}
+			catch (...) {
+				Sleep(time * 0.0001);
+				try {
+					controller.StopFeedback();
+				}
+				catch (...) {
+				}
+			}
 		}
 	}
 	return 0;
